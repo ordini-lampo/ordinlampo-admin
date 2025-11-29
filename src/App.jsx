@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, Settings } from 'lucide-react';
+import { Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, Settings, CreditCard, Star, AlertCircle } from 'lucide-react';
 import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } from './supabaseClient';
 
 // ============================================
@@ -8,6 +8,14 @@ import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } f
 
 // ID Ristorante Pokenjoy (dal database)
 const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
+
+// 💳 STRIPE CONFIGURATION
+const STRIPE_PRICES = {
+  pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx',        // €39.90/mese
+  multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7'  // €29.90/mese
+};
+
+const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 
 export default function OrdinlampoAdmin() {
   // Stati per le configurazioni
@@ -46,6 +54,12 @@ export default function OrdinlampoAdmin() {
   const [showSaveNotification, setShowSaveNotification] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('checking');
   const [loading, setLoading] = useState(true);
+
+  // 💳 NUOVI STATI PER ABBONAMENTO
+  const [subscriptionStatus, setSubscriptionStatus] = useState('trial');
+  const [planId, setPlanId] = useState('normal');
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   // Funzioni per gestire le località
   const addLocation = () => {
@@ -101,6 +115,42 @@ export default function OrdinlampoAdmin() {
   const updateFloorDelivery = (field, value) => {
     setFloorDelivery({ ...floorDelivery, [field]: value });
     showNotification();
+  };
+
+  // ============================================
+  // 💳 STRIPE CHECKOUT FUNCTION
+  // ============================================
+  const handleSubscribe = async (priceId) => {
+    setCheckoutLoading(true);
+    
+    try {
+      const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          priceId: priceId,
+          restaurantId: RESTAURANT_ID,
+          returnUrl: window.location.origin
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        alert('Errore nella creazione del pagamento. Riprova.');
+        console.error('Checkout error:', data.error);
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      alert('Errore di connessione. Verifica la tua connessione internet.');
+    }
+    
+    setCheckoutLoading(false);
   };
 
   // ============================================
@@ -166,7 +216,7 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
   // 🔄 CARICAMENTO CONFIGURAZIONI DA SUPABASE
   // ============================================
 
-  // Carica configurazioni salvate
+  // Carica configurazioni salvate + stato abbonamento
   useEffect(() => {
     const loadConfig = async () => {
       setLoading(true);
@@ -181,20 +231,26 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
         return;
       }
 
-      // SOSTITUISCE: const saved = localStorage.getItem('pokenjoy_config')
+      // Carica configurazioni ristorante
       const config = await getRestaurantConfig(RESTAURANT_ID);
       
-      if (config && config.settings) {
-        const settings = config.settings;
+      if (config) {
+        // 💳 Carica stato abbonamento
+        if (config.subscription_status) setSubscriptionStatus(config.subscription_status);
+        if (config.plan_id) setPlanId(config.plan_id);
+        if (config.current_period_end) setCurrentPeriodEnd(config.current_period_end);
         
-        // Carica dati se presenti
-        if (settings.delivery_locations) setLocations(settings.delivery_locations);
-        if (settings.poke_sizes) setPokeSizes(settings.poke_sizes);
-        if (settings.extra_prices) setExtraPrices(settings.extra_prices);
-        if (settings.floor_delivery) setFloorDelivery(settings.floor_delivery);
-        if (settings.rider_tip) setRiderTip(settings.rider_tip);
-        if (settings.whatsapp_number) setWhatsappNumber(settings.whatsapp_number);
-        if (settings.restaurant_name) setRestaurantName(settings.restaurant_name);
+        // Carica settings se presenti
+        if (config.settings) {
+          const settings = config.settings;
+          if (settings.delivery_locations) setLocations(settings.delivery_locations);
+          if (settings.poke_sizes) setPokeSizes(settings.poke_sizes);
+          if (settings.extra_prices) setExtraPrices(settings.extra_prices);
+          if (settings.floor_delivery) setFloorDelivery(settings.floor_delivery);
+          if (settings.rider_tip) setRiderTip(settings.rider_tip);
+          if (settings.whatsapp_number) setWhatsappNumber(settings.whatsapp_number);
+          if (settings.restaurant_name) setRestaurantName(settings.restaurant_name);
+        }
         
         console.log('✅ Configurazioni caricate da Supabase');
       } else {
@@ -204,18 +260,61 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
       setLoading(false);
     };
 
+    // Check URL params for Stripe redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('session_id')) {
+      // Payment successful, reload to get updated status
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    if (urlParams.get('canceled')) {
+      alert('Pagamento annullato. Puoi riprovare quando vuoi.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     loadConfig();
   }, []);
 
-  // Salvataggio automatico ogni volta che cambia qualcosa (opzionale)
-  // useEffect(() => {
-  //   if (!loading) {
-  //     const timer = setTimeout(() => {
-  //       saveAllConfigurations();
-  //     }, 2000);
-  //     return () => clearTimeout(timer);
-  //   }
-  // }, [locations, pokeSizes, extraPrices, floorDelivery, riderTip]);
+  // Helper per formattare la data
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('it-IT', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  // Helper per status badge
+  const getStatusBadge = () => {
+    if (planId === 'pro' && subscriptionStatus === 'active') {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 text-white">
+          <Star className="w-4 h-4 mr-1" />
+          PRO
+        </span>
+      );
+    }
+    if (subscriptionStatus === 'past_due') {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+          <AlertCircle className="w-4 h-4 mr-1" />
+          Pagamento in ritardo
+        </span>
+      );
+    }
+    if (subscriptionStatus === 'canceled') {
+      return (
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
+          Cancellato
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-800">
+        Trial
+      </span>
+    );
+  };
 
   if (loading) {
     return (
@@ -235,9 +334,12 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                ⚙️ Admin Panel - Ordinlampo
-              </h1>
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-gray-800">
+                  ⚙️ Admin Panel - Ordinlampo
+                </h1>
+                {getStatusBadge()}
+              </div>
               <p className="text-gray-600">Gestisci tutte le configurazioni del sistema</p>
               <div className="mt-2 flex items-center gap-2">
                 {connectionStatus === 'connected' ? (
@@ -284,7 +386,7 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
               }`}
             >
               <MapPin className="w-5 h-5" />
-              <span>Località Consegna</span>
+              <span>Località</span>
             </button>
             <button
               onClick={() => setActiveTab('prices')}
@@ -295,7 +397,18 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
               }`}
             >
               <DollarSign className="w-5 h-5" />
-              <span>Prezzi & Tariffe</span>
+              <span>Prezzi</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('subscription')}
+              className={`flex-1 px-6 py-4 font-semibold flex items-center justify-center space-x-2 transition-colors ${
+                activeTab === 'subscription'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <CreditCard className="w-5 h-5" />
+              <span>Abbonamento</span>
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -546,6 +659,137 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* 💳 ABBONAMENTO TAB (NUOVO!) */}
+            {activeTab === 'subscription' && (
+              <div className="space-y-6">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">💳 Gestione Abbonamento</h2>
+
+                {/* Stato attuale */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4">Stato Attuale</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Piano</p>
+                      <p className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        {planId === 'pro' ? '⭐ PRO' : planId === 'multi_sede' ? '🏢 Multi-Sede' : '🆓 Normal'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Status</p>
+                      <p className="text-xl font-bold">
+                        {subscriptionStatus === 'active' && <span className="text-green-600">✅ Attivo</span>}
+                        {subscriptionStatus === 'trial' && <span className="text-blue-600">🔄 Trial</span>}
+                        {subscriptionStatus === 'past_due' && <span className="text-red-600">⚠️ Pagamento in ritardo</span>}
+                        {subscriptionStatus === 'canceled' && <span className="text-gray-600">❌ Cancellato</span>}
+                      </p>
+                    </div>
+                    {currentPeriodEnd && (
+                      <div className="col-span-2">
+                        <p className="text-sm text-gray-600">Prossimo rinnovo</p>
+                        <p className="text-lg font-semibold text-gray-800">{formatDate(currentPeriodEnd)}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Piani disponibili */}
+                {(planId === 'normal' || subscriptionStatus === 'trial' || subscriptionStatus === 'canceled') && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-gray-800">Passa a PRO</h3>
+                    
+                    {/* Piano PRO */}
+                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border-2 border-orange-300 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 bg-orange-500 text-white px-4 py-1 text-sm font-bold rounded-bl-lg">
+                        CONSIGLIATO
+                      </div>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h4 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                            <Star className="w-6 h-6 text-orange-500" />
+                            Piano PRO
+                          </h4>
+                          <p className="text-gray-600 mt-1">Ordini illimitati, zero commissioni</p>
+                          <ul className="mt-4 space-y-2">
+                            <li className="flex items-center gap-2 text-gray-700">
+                              <span className="text-green-500">✓</span> Ordini illimitati
+                            </li>
+                            <li className="flex items-center gap-2 text-gray-700">
+                              <span className="text-green-500">✓</span> Zero commissioni sugli ordini
+                            </li>
+                            <li className="flex items-center gap-2 text-gray-700">
+                              <span className="text-green-500">✓</span> Supporto prioritario
+                            </li>
+                            <li className="flex items-center gap-2 text-gray-700">
+                              <span className="text-green-500">✓</span> Statistiche avanzate
+                            </li>
+                          </ul>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-4xl font-bold text-gray-800">€39,90</p>
+                          <p className="text-gray-600">/mese</p>
+                          <button
+                            onClick={() => handleSubscribe(STRIPE_PRICES.pro)}
+                            disabled={checkoutLoading}
+                            className="mt-4 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white font-bold py-3 px-8 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none flex items-center gap-2"
+                          >
+                            {checkoutLoading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                Caricamento...
+                              </>
+                            ) : (
+                              <>
+                                <CreditCard className="w-5 h-5" />
+                                Abbonati Ora
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Info se già PRO */}
+                {planId === 'pro' && subscriptionStatus === 'active' && (
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                        <Star className="w-6 h-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-green-800">Sei già PRO! 🎉</h3>
+                        <p className="text-green-700">Stai godendo di tutti i vantaggi dell'abbonamento PRO.</p>
+                      </div>
+                    </div>
+                    <p className="mt-4 text-sm text-green-600">
+                      Il tuo abbonamento si rinnoverà automaticamente il {formatDate(currentPeriodEnd)}.
+                      Per gestire o cancellare l'abbonamento, contatta il supporto.
+                    </p>
+                  </div>
+                )}
+
+                {/* Avviso pagamento fallito */}
+                {subscriptionStatus === 'past_due' && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-8 h-8 text-red-500" />
+                      <div>
+                        <h3 className="text-lg font-bold text-red-800">Pagamento non riuscito</h3>
+                        <p className="text-red-700">Il tuo ultimo pagamento non è andato a buon fine. Aggiorna il metodo di pagamento per continuare.</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleSubscribe(STRIPE_PRICES.pro)}
+                      className="mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg"
+                    >
+                      Aggiorna Pagamento
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

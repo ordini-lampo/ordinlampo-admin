@@ -2,6 +2,7 @@
 // 🔌 SUPABASE CLIENT - ORDINLAMPO
 // ============================================
 // Configurazione client Supabase per app admin
+// AGGIORNATO: 29 Nov 2025 - Aggiunto supporto campi abbonamento Stripe
 
 import { createClient } from '@supabase/supabase-js'
 
@@ -16,12 +17,22 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // 🛠️ FUNZIONI HELPER PER ADMIN
 // ============================================
 
-// Ottieni configurazione ristorante
+// Ottieni configurazione ristorante (CON CAMPI ABBONAMENTO)
 export const getRestaurantConfig = async (restaurantId) => {
   try {
     const { data, error } = await supabase
       .from('restaurants')
-      .select('settings, name, whatsapp_number')
+      .select(`
+        settings, 
+        name, 
+        whatsapp_number,
+        plan_id,
+        subscription_status,
+        stripe_customer_id,
+        stripe_subscription_id,
+        current_period_end,
+        billing_email
+      `)
       .eq('id', restaurantId)
       .single()
 
@@ -58,7 +69,7 @@ export const getAllRestaurants = async () => {
   try {
     const { data, error } = await supabase
       .from('restaurants')
-      .select('id, name, slug, active')
+      .select('id, name, slug, active, plan_id, subscription_status')
       .order('name')
 
     if (error) throw error
