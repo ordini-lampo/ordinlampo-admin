@@ -2,7 +2,8 @@
 // 🔌 SUPABASE CLIENT - ORDINLAMPO
 // ============================================
 // Configurazione client Supabase per app admin
-// UPDATED: 30 Nov 2025 - Aggiunto campi delivery_fee e rider_compensation
+// FIXED: 29 Nov 2025 - Rimosso riferimento a colonna 'settings' inesistente
+
 import { createClient } from '@supabase/supabase-js'
 
 // Credenziali Supabase
@@ -16,7 +17,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 // 🛠️ FUNZIONI HELPER PER ADMIN
 // ============================================
 
-// Ottieni configurazione ristorante
+// Ottieni configurazione ristorante (SENZA colonna settings)
 export const getRestaurantConfig = async (restaurantId) => {
   try {
     const { data, error } = await supabase
@@ -37,13 +38,7 @@ export const getRestaurantConfig = async (restaurantId) => {
         city,
         cap,
         phone,
-        email,
-        delivery_fee,
-        show_rider_compensation,
-        rider_compensation_amount,
-        allow_delivery_fee_edit,
-        allow_rider_compensation_display,
-        force_rider_compensation
+        email
       `)
       .eq('id', restaurantId)
       .single()
@@ -59,18 +54,14 @@ export const getRestaurantConfig = async (restaurantId) => {
 // Salva configurazione ristorante
 export const saveRestaurantConfig = async (restaurantId, config) => {
   try {
+    // Estrai solo i campi che esistono nella tabella
     const updateData = {
       updated_at: new Date().toISOString()
     }
     
-    // Campi base
+    // Aggiungi solo campi validi
     if (config.whatsapp_number) updateData.whatsapp_number = config.whatsapp_number
     if (config.restaurant_name) updateData.name = config.restaurant_name
-    
-    // Campi consegna e rider
-    if (config.delivery_fee !== undefined) updateData.delivery_fee = config.delivery_fee
-    if (config.show_rider_compensation !== undefined) updateData.show_rider_compensation = config.show_rider_compensation
-    if (config.rider_compensation_amount !== undefined) updateData.rider_compensation_amount = config.rider_compensation_amount
     
     const { data, error } = await supabase
       .from('restaurants')
