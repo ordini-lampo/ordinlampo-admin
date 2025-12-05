@@ -895,18 +895,30 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
                             setDeliveryEnabled(newValue);
                             
                             // Salva su database
-                            const { error } = await supabase
-                              .from('restaurants')
-                              .update({ delivery_enabled: newValue })
-                              .eq('id', RESTAURANT_ID);
-                            
-                            if (error) {
-                              console.error('Errore salvataggio delivery:', error);
-                              alert('❌ Errore nel salvataggio');
-                              setDeliveryEnabled(!newValue); // Rollback
-                            } else {
-                              showNotification();
-                            }
+                            try {
+  // 1️⃣ Salva su restaurants
+  const { error: err1 } = await supabase
+    .from('restaurants')
+    .update({ delivery_enabled: newValue })
+    .eq('id', RESTAURANT_ID);
+  
+  if (err1) throw err1;
+  
+  // 2️⃣ Sincronizza su restaurant_settings
+  const { error: err2 } = await supabase
+    .from('restaurant_settings')
+    .update({ enable_delivery: newValue })
+    .eq('restaurant_id', RESTAURANT_ID);
+  
+  if (err2) console.warn('Settings sync:', err2);
+  
+  showNotification();
+  
+} catch (error) {
+  console.error('Errore delivery toggle:', error);
+  alert('❌ Errore nel salvataggio');
+  setDeliveryEnabled(!newValue); // Rollback
+}
                           }}
                           className={`
                             relative inline-flex h-10 w-20 items-center rounded-full
