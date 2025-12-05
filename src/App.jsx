@@ -67,6 +67,8 @@ export default function OrdinlampoAdmin() {
   const [allowDeliveryFeeEdit, setAllowDeliveryFeeEdit] = useState(true);
   const [allowRiderCompensationDisplay, setAllowRiderCompensationDisplay] = useState(true);
   const [forceRiderCompensation, setForceRiderCompensation] = useState(false);
+  // 🚗 STATO PER TOGGLE DELIVERY ON/OFF
+  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
 
   // Funzioni per gestire le località
   const addLocation = () => {
@@ -240,6 +242,22 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
         setLoading(false);
         return;
       }
+
+      // 🚗 Carica stato delivery_enabled dal database
+    try {
+      const { data: restaurantData, error } = await supabase
+        .from('restaurants')
+        .select('delivery_enabled')
+        .eq('id', RESTAURANT_ID)
+        .single();
+      
+      if (restaurantData && !error) {
+        setDeliveryEnabled(restaurantData.delivery_enabled ?? true);
+      }
+    } catch (err) {
+      console.error('Errore caricamento delivery_enabled:', err);
+      setDeliveryEnabled(true); // Default: delivery attivo
+    }
 
       // Carica configurazioni ristorante
       const config = await getRestaurantConfig(RESTAURANT_ID);
@@ -836,6 +854,108 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
                       placeholder="393271234567"
                     />
                     <p className="text-sm text-gray-600 mt-1">Formato: 393271234567 (senza + o spazi)</p>
+                  </div>
+
+                  {/* 🚗 TOGGLE DELIVERY ON/OFF */}
+                  <div className="pt-4 border-t">
+                    <h3 className="font-semibold text-gray-800 mb-3">🚗 Servizio Consegna</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Scegli se offrire consegna a domicilio oppure solo asporto
+                    </p>
+                    
+                    <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className={`inline-flex items-center px-4 py-3 rounded-lg ${
+                            deliveryEnabled 
+                              ? 'bg-green-50 text-green-700 border border-green-200' 
+                              : 'bg-blue-50 text-blue-700 border border-blue-200'
+                          }`}>
+                            <span className="text-2xl mr-3">
+                              {deliveryEnabled ? '✅' : '🏪'}
+                            </span>
+                            <div>
+                              <div className="font-medium">
+                                {deliveryEnabled ? 'Delivery Attivo' : 'Solo Asporto'}
+                              </div>
+                              <div className="text-xs mt-1">
+                                {deliveryEnabled 
+                                  ? 'I clienti vedono opzioni "Consegna" e "Ritiro"'
+                                  : 'I clienti vedono solo opzione "Ritiro al locale"'
+                                }
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Toggle Switch */}
+                        <button
+                          onClick={async () => {
+                            const newValue = !deliveryEnabled;
+                            setDeliveryEnabled(newValue);
+                            
+                            // Salva su database
+                            const { error } = await supabase
+                              .from('restaurants')
+                              .update({ delivery_enabled: newValue })
+                              .eq('id', RESTAURANT_ID);
+                            
+                            if (error) {
+                              console.error('Errore salvataggio delivery:', error);
+                              alert('❌ Errore nel salvataggio');
+                              setDeliveryEnabled(!newValue); // Rollback
+                            } else {
+                              showNotification();
+                            }
+                          }}
+                          className={`
+                            relative inline-flex h-10 w-20 items-center rounded-full
+                            transition-colors duration-200 focus:outline-none focus:ring-2 
+                            focus:ring-offset-2 focus:ring-blue-500 ml-4
+                            ${deliveryEnabled ? 'bg-green-500' : 'bg-gray-300'}
+                          `}
+                        >
+                          <span
+                            className={`
+                              inline-block h-8 w-8 transform rounded-full 
+                              bg-white shadow-lg transition-transform duration-200
+                              ${deliveryEnabled ? 'translate-x-11' : 'translate-x-1'}
+                            `}
+                          />
+                        </button>
+                      </div>
+                      
+                      {/* Info Box */}
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-start">
+                          <span className="text-blue-500 text-xl mr-2">💡</span>
+                          <div className="text-sm text-blue-800">
+                            <p className="font-medium mb-1">
+                              {deliveryEnabled 
+                                ? 'Con delivery attivo:'
+                                : 'Solo asporto è perfetto per:'
+                              }
+                            </p>
+                            <ul className="space-y-1">
+                              {deliveryEnabled ? (
+                                <>
+                                  <li>✓ Clienti scelgono tra consegna e ritiro</li>
+                                  <li>✓ Imposti zone e costi delivery</li>
+                                  <li>✓ Gestisci tutto da un unico pannello</li>
+                                </>
+                              ) : (
+                                <>
+                                  <li>✓ Cliente ordina dal divano, ritira al locale</li>
+                                  <li>✓ Evita code e attese in orario punta</li>
+                                  <li>✓ Zero complessità logistica</li>
+                                  <li>✓ Focus su preparazione, non consegne</li>
+                                </>
+                              )}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="pt-4 border-t">
