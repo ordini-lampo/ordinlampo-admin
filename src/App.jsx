@@ -3,10 +3,9 @@ import { Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, Sett
 import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } from './supabaseClient';
 
 // ============================================
-// 💎 ADMIN PANEL ORDINLAMPO - GRIGIO ZEN (v4.2 FINALE)
-// Design: Grigio Neutro Professionale (Zero Affaticamento Occhi)
-// Psychology: Zinc Grigio Puro (come VSCode) + Bowl SVG Custom
-// Optimized for: Miopia, Astigmatismo, Presbiopia (10-12h uso)
+// 💎 ADMIN PANEL ORDINLAMPO - MONO GRIGIO v5.0 FINALE
+// Design: 1 SOLO Grigio #6b6a6a + Bordi Blu #608beb Sottili
+// Request: Paolo Pizzo - "Un'unica tonalità grigio"
 // ============================================
 
 const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
@@ -333,7 +332,7 @@ export default function OrdinlampoAdmin() {
       <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
-        <div className={`${BG_TUTTO} rounded-2xl shadow-2xl p-8 mb-8 border-2 ${BORDER_BLU}`}>
+        <div className={`${BG_TUTTO} rounded-2xl shadow-2xl p-8 mb-8 border ${BORDER_BLU}`}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -424,7 +423,7 @@ export default function OrdinlampoAdmin() {
         )}
 
         {/* Tabs */}
-        <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border-2 ${BORDER_BLU} mb-8 overflow-hidden`}>
+        <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
           <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#6b6a6a]">
             {[
               { id: 'locations', label: 'Località', icon: MapPin },
@@ -465,7 +464,7 @@ export default function OrdinlampoAdmin() {
                 {locations.map(loc => (
                   <div
                     key={loc.id}
-                    className={`${BG_TUTTO_HOVER} p-6 rounded-2xl flex items-center justify-between border-2 shadow-lg transition-all hover:shadow-xl ${
+                    className={`${BG_TUTTO} p-6 rounded-2xl flex items-center justify-between border shadow-lg transition-all hover:shadow-xl ${
                       !loc.active ? 'opacity-60 border-dashed border-gray-600' : `${BORDER_BLU} shadow-[#608beb]/20`
                     }`}
                   >
@@ -473,19 +472,19 @@ export default function OrdinlampoAdmin() {
                       {editingLocation === loc.id ? (
                         <div className="flex gap-2">
                           <input
-                            className={`border-2 ${BORDER_BLU} p-3 rounded-xl w-1/3 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                            className={`border ${BORDER_BLU} p-3 rounded-xl w-1/3 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
                             defaultValue={loc.name}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'name', e.target.value)}
                           />
                           <input
-                            className={`border-2 ${BORDER_BLU} p-3 rounded-xl w-24 font-bold text-center ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                            className={`border ${BORDER_BLU} p-3 rounded-xl w-24 font-bold text-center ${BG_TUTTO} ${TEXT_PRIMARY}`}
                             type="number"
                             step="0.50"
                             defaultValue={loc.fee}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'fee', parseFloat(e.target.value))}
                           />
                           <input
-                            className={`border-2 ${BORDER_BLU} p-3 rounded-xl w-1/3 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                            className={`border ${BORDER_BLU} p-3 rounded-xl w-1/3 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
                             defaultValue={loc.estimatedTime}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'estimatedTime', e.target.value)}
                           />
@@ -500,19 +499,19 @@ export default function OrdinlampoAdmin() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleLocationActive(loc.id)}
-                        className={`p-3 ${BG_TUTTO} rounded-xl border-2 ${BORDER_BLU} hover:bg-[#6b6a6a] transition-colors shadow-sm`}
+                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-[#6b6a6a] transition-colors shadow-sm`}
                       >
                         {loc.active ? <Eye className="w-5 h-5 text-green-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
                       </button>
                       <button
                         onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)}
-                        className={`p-3 ${BG_TUTTO} rounded-xl border-2 ${BORDER_BLU} hover:bg-[#6b6a6a] transition-colors shadow-sm`}
+                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-[#6b6a6a] transition-colors shadow-sm`}
                       >
                         <Edit2 className="w-5 h-5 text-blue-500" />
                       </button>
                       <button
                         onClick={() => deleteLocation(loc.id)}
-                        className={`p-3 ${BG_TUTTO} rounded-xl border-2 ${BORDER_BLU} hover:bg-red-900 transition-colors shadow-sm`}
+                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-red-900 transition-colors shadow-sm`}
                       >
                         <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
@@ -520,20 +519,20 @@ export default function OrdinlampoAdmin() {
                   </div>
                 ))}
                 
-                <div className="bg-blue-900/30 p-6 rounded-2xl border border-blue-500 mt-6">
+                <div className="bg-blue-900/30 p-6 rounded-2xl border border-[#608beb] mt-6">
                   <h3 className={`font-bold ${TEXT_PRIMARY} mb-4 flex items-center gap-2 text-lg`}>
                     <Plus className="w-6 h-6" />
                     Nuova Zona
                   </h3>
                   <div className="flex gap-3">
                     <input
-                      className={`border border-blue-500 p-3 rounded-xl flex-1 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                      className={`border border-[#608beb] p-3 rounded-xl flex-1 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
                       placeholder="Nome zona"
                       value={newLocation.name}
                       onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
                     />
                     <input
-                      className={`border border-blue-500 p-3 rounded-xl w-28 font-bold text-center ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                      className={`border border-[#608beb] p-3 rounded-xl w-28 font-bold text-center ${BG_TUTTO} ${TEXT_PRIMARY}`}
                       type="number"
                       step="0.50"
                       placeholder="€"
@@ -541,7 +540,7 @@ export default function OrdinlampoAdmin() {
                       onChange={(e) => setNewLocation({ ...newLocation, fee: e.target.value })}
                     />
                     <input
-                      className={`border border-blue-500 p-3 rounded-xl w-36 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                      className={`border border-[#608beb] p-3 rounded-xl w-36 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
                       placeholder="20-25 min"
                       value={newLocation.estimatedTime}
                       onChange={(e) => setNewLocation({ ...newLocation, estimatedTime: e.target.value })}
@@ -566,7 +565,7 @@ export default function OrdinlampoAdmin() {
                     {pokeSizes.map(size => (
                       <div
                         key={size.id}
-                        className={`${BG_TUTTO_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_BLU}`}
+                        className={`${BG_TUTTO} p-4 rounded-xl shadow-md border ${BORDER_BLU}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className={`font-bold text-lg ${TEXT_PRIMARY} flex items-center gap-3`}>
@@ -578,7 +577,7 @@ export default function OrdinlampoAdmin() {
                             <input
                               type="number"
                               step="0.50"
-                              className={`border-2 ${BORDER_BLU} p-2 w-24 rounded-lg text-center font-bold ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                              className={`border ${BORDER_BLU} p-2 w-24 rounded-lg text-center font-bold ${BG_TUTTO} ${TEXT_PRIMARY}`}
                               value={size.price}
                               onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
                             />
@@ -595,7 +594,7 @@ export default function OrdinlampoAdmin() {
                     {Object.entries(extraPrices).map(([key, val]) => (
                       <div
                         key={key}
-                        className={`${BG_TUTTO_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_BLU}`}
+                        className={`${BG_TUTTO} p-4 rounded-xl shadow-md border ${BORDER_BLU}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className={`capitalize font-bold ${TEXT_PRIMARY}`}>{key}</span>
@@ -604,7 +603,7 @@ export default function OrdinlampoAdmin() {
                             <input
                               type="number"
                               step="0.10"
-                              className={`border-2 ${BORDER_BLU} p-2 w-24 rounded-lg text-center font-bold ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                              className={`border ${BORDER_BLU} p-2 w-24 rounded-lg text-center font-bold ${BG_TUTTO} ${TEXT_PRIMARY}`}
                               value={val}
                               onChange={(e) => updateExtraPrice(key, e.target.value)}
                             />
@@ -650,14 +649,14 @@ export default function OrdinlampoAdmin() {
             {/* TAB IMPOSTAZIONI */}
             {activeTab === 'settings' && (
               <div className="space-y-8">
-                <div className={`${BG_TUTTO_HOVER} p-8 rounded-2xl border-2 ${BORDER_BLU} shadow-lg`}>
+                <div className={`${BG_TUTTO} p-8 rounded-2xl border ${BORDER_BLU} shadow-lg`}>
                   <h3 className={`font-bold text-xl mb-6 ${TEXT_PRIMARY}`}>Generale</h3>
                   <div className="space-y-5">
                     <div>
                       <label className={`block font-bold ${TEXT_SECONDARY} mb-2`}>Nome Ristorante</label>
                       <input
                         type="text"
-                        className={`w-full border-2 ${BORDER_BLU} p-4 rounded-xl font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                        className={`w-full border ${BORDER_BLU} p-4 rounded-xl font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
                         value={restaurantName}
                         onChange={(e) => setRestaurantName(e.target.value)}
                       />
@@ -666,7 +665,7 @@ export default function OrdinlampoAdmin() {
                       <label className={`block font-bold ${TEXT_SECONDARY} mb-2`}>WhatsApp</label>
                       <input
                         type="text"
-                        className={`w-full border-2 ${BORDER_BLU} p-4 rounded-xl font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                        className={`w-full border ${BORDER_BLU} p-4 rounded-xl font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
                         placeholder="393331234567"
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
@@ -676,7 +675,7 @@ export default function OrdinlampoAdmin() {
                 </div>
 
                 {/* Toggle Delivery */}
-                <div className={`${BG_TUTTO_HOVER} p-8 rounded-2xl border border-blue-500 shadow-xl`}>
+                <div className={`${BG_TUTTO} p-8 rounded-2xl border border-[#608beb] shadow-xl`}>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                       <h3 className={`font-bold text-2xl ${TEXT_PRIMARY}`}>Modalità Operativa</h3>
@@ -711,7 +710,7 @@ export default function OrdinlampoAdmin() {
                           setDeliveryEnabled(!newVal);
                         }
                       }}
-                      className={`w-24 h-12 rounded-full relative transition-colors duration-300 shadow-lg border-2 ${
+                      className={`w-24 h-12 rounded-full relative transition-colors duration-300 shadow-lg border ${
                         deliveryEnabled ? 'bg-gradient-to-r from-green-500 to-green-600 border-green-400' : 'bg-gray-600 border-gray-500'
                       }`}
                     >
@@ -733,7 +732,7 @@ export default function OrdinlampoAdmin() {
                   <h2 className={`text-3xl font-bold ${TEXT_PRIMARY}`}>Storico Ordini</h2>
                   <button
                     onClick={loadOrders}
-                    className="text-blue-400 hover:bg-[#6b6a6a] px-6 py-3 rounded-xl font-bold transition-colors border border-blue-500 shadow-md"
+                    className="text-blue-400 hover:bg-[#6b6a6a] px-6 py-3 rounded-xl font-bold transition-colors border border-[#608beb] shadow-md"
                   >
                     🔄 Aggiorna Lista
                   </button>
@@ -745,7 +744,7 @@ export default function OrdinlampoAdmin() {
                     <p className={`${TEXT_PRIMARY} font-medium text-lg`}>Caricamento ordini...</p>
                   </div>
                 ) : orders.length === 0 ? (
-                  <div className={`${BG_TUTTO_HOVER} rounded-2xl p-12 text-center border border-gray-700 shadow-inner`}>
+                  <div className={`${BG_TUTTO} rounded-2xl p-12 text-center border border-[#608beb] shadow-inner`}>
                     <p className="text-6xl mb-4">📭</p>
                     <p className={`${TEXT_PRIMARY} text-xl font-bold`}>Nessun ordine ancora</p>
                     <p className={`${TEXT_SECONDARY} text-sm mt-2`}>Gli ordini appariranno qui quando i clienti ordinano</p>
@@ -755,7 +754,7 @@ export default function OrdinlampoAdmin() {
                     {orders.map(order => (
                       <div
                         key={order.id}
-                        className={`${BG_TUTTO_HOVER} rounded-2xl shadow-lg border-2 ${BORDER_BLU} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
+                        className={`${BG_TUTTO} rounded-2xl shadow-lg border ${BORDER_BLU} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
                       >
                         <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-[#6b6a6a]">
                           <div className="flex items-center gap-4 w-full md:w-auto">
