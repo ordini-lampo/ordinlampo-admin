@@ -572,15 +572,29 @@ export default function OrdinlampoAdmin() {
                             {renderBowlIcon(size.id)}
                             {size.name}
                           </span>
-                          <div className="flex items-center gap-2">
-                            <span className={`${TEXT_SECONDARY} font-medium`}>€</span>
-                            <input
-                              type="number"
-                              step="0.50"
-                              className={`border ${BORDER_BLU} p-2 w-24 rounded-lg text-center font-bold ${BG_TUTTO} ${TEXT_PRIMARY}`}
-                              value={size.price}
-                              onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
-                            />
+                          <div className="flex items-center gap-3">
+                            <span className={`${TEXT_SECONDARY} font-medium text-lg`}>€</span>
+                            <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-xl p-1 border ${BORDER_BLU}">
+                              <button
+                                onClick={() => updatePokeSize(size.id, 'price', Math.max(0, size.price - 0.50).toFixed(2))}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] hover:bg-[#4a7bd9] text-white font-black text-xl transition-colors"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                step="0.50"
+                                className={`w-20 text-center font-bold text-lg ${BG_TUTTO} ${TEXT_PRIMARY} border-none outline-none bg-transparent`}
+                                value={size.price}
+                                onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
+                              />
+                              <button
+                                onClick={() => updatePokeSize(size.id, 'price', (parseFloat(size.price) + 0.50).toFixed(2))}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] hover:bg-[#4a7bd9] text-white font-black text-xl transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -598,15 +612,29 @@ export default function OrdinlampoAdmin() {
                       >
                         <div className="flex justify-between items-center">
                           <span className={`capitalize font-bold ${TEXT_PRIMARY}`}>{key}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`${TEXT_SECONDARY} font-medium`}>€</span>
-                            <input
-                              type="number"
-                              step="0.10"
-                              className={`border ${BORDER_BLU} p-2 w-24 rounded-lg text-center font-bold ${BG_TUTTO} ${TEXT_PRIMARY}`}
-                              value={val}
-                              onChange={(e) => updateExtraPrice(key, e.target.value)}
-                            />
+                          <div className="flex items-center gap-3">
+                            <span className={`${TEXT_SECONDARY} font-medium text-lg`}>€</span>
+                            <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-xl p-1 border ${BORDER_BLU}">
+                              <button
+                                onClick={() => updateExtraPrice(key, Math.max(0, val - 0.10).toFixed(2))}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] hover:bg-[#4a7bd9] text-white font-black text-xl transition-colors"
+                              >
+                                −
+                              </button>
+                              <input
+                                type="number"
+                                step="0.10"
+                                className={`w-20 text-center font-bold text-lg ${BG_TUTTO} ${TEXT_PRIMARY} border-none outline-none bg-transparent`}
+                                value={val}
+                                onChange={(e) => updateExtraPrice(key, e.target.value)}
+                              />
+                              <button
+                                onClick={() => updateExtraPrice(key, (parseFloat(val) + 0.10).toFixed(2))}
+                                className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] hover:bg-[#4a7bd9] text-white font-black text-xl transition-colors"
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
