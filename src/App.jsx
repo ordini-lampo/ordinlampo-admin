@@ -13,10 +13,10 @@ const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
 
-// 🎨 GRIGIO ZEN PALETTE (Neutro + Riposo Oculare)
-const BG_DARK = 'bg-zinc-950'; // #09090b - Background grigio neutro
-const BG_CARD = 'bg-zinc-900'; // #18181b - Card grigio antracite
-const BG_CARD_HOVER = 'bg-zinc-800'; // #27272a - Hover grigio caldo
+// 🎨 GRIGIO ZEN PALETTE (UN SOLO GRIGIO UNIFORME!)
+const BG_DARK = 'bg-zinc-900'; // #18181b - TUTTO UGUALE (pagina + card + input)
+const BG_CARD = 'bg-zinc-900'; // #18181b - TUTTO UGUALE (separazione solo con bordi oro)
+const BG_CARD_HOVER = 'bg-zinc-800'; // #27272a - Solo hover leggermente più chiaro
 const TEXT_PRIMARY = 'text-gray-50'; // #F9FAFB - Testo principale
 const TEXT_SECONDARY = 'text-gray-400'; // #9CA3AF - Testo secondario
 const BORDER_GOLD = 'border-yellow-500'; // #F59E0B - Bordi oro (VISIBILE!)
