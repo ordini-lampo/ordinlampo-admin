@@ -905,6 +905,17 @@ export default function OrdinlampoAdmin() {
         .animate-bounce-subtle {
           animation: bounce-subtle 2s ease-in-out infinite;
         }
+
+        /* Nascondi frecce native input number */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
       `}</style>
     </div>
   );
