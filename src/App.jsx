@@ -3,21 +3,27 @@ import { Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, Sett
 import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } from './supabaseClient';
 
 // ============================================
-// 💎 ADMIN PANEL ORDINLAMPO - STEALTH FORTUNE EDITION (v3.0)
-// Design: Premium, Minimal, Caldo (Feng Shui Colors)
+// 💎 ADMIN PANEL ORDINLAMPO - DARK MODE ELEGANT (v4.1 SUPER-IBRIDO)
+// Design: Premium Dark, Professionale, Alto Contrasto
+// Update: Icone Bowl SVG Custom (Gemini) + Base Claude Stabile
 // ============================================
 
 const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
 
-// 🎨 PALETTE COLORI (Stealth Fortune)
-// Caldi, accoglienti, portafortuna ma non invadenti
-const BG_IVORY = 'bg-[#FFFBF0]'; // Card background (Avorio Perla)
-const BG_CREAM = 'bg-[#FEF6E4]'; // App background (Crema Caldo)
+// 🎨 DARK MODE PALETTE (Elegante + Alto Contrasto)
+const BG_DARK = 'bg-slate-900'; // #111827 - Background principale
+const BG_CARD = 'bg-slate-800'; // #1F2937 - Card
+const BG_CARD_HOVER = 'bg-slate-700'; // #374151 - Hover state
+const TEXT_PRIMARY = 'text-gray-50'; // #F9FAFB - Testo principale
+const TEXT_SECONDARY = 'text-gray-400'; // #9CA3AF - Testo secondario
+const BORDER_GOLD = 'border-yellow-500'; // #F59E0B - Bordi oro (VISIBILE!)
+const ACCENT_RED = 'bg-red-600'; // #DC2626 - Rosso fortuna
+const ACCENT_GREEN = 'bg-green-600'; // #10B981 - Verde successo
 
 // ============================================
-// 🧧 ICONE SPECIALI (Solo accenti significativi)
+// 🎨 ICONE CUSTOM (Busta Rossa + Bowl SVG Professionali)
 // ============================================
 const Icons = {
   RedEnvelope: ({ className }) => (
@@ -26,6 +32,30 @@ const Icons = {
       <path d="M15 30 L50 60 L85 30" fill="#B91C1C" />
       <circle cx="50" cy="70" r="15" fill="#F59E0B" />
       <text x="50" y="78" fontSize="16" fill="#DC2626" textAnchor="middle" fontWeight="bold">福</text>
+    </svg>
+  ),
+  
+  // 🥣 BOWL PICCOLA: Compatta, riempimento base
+  BowlS: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 10c0 4.4 3.6 8 8 8s8-3.6 8-8H4z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M4 10c0-1 2-2 5-2s5 1 5 2" />
+    </svg>
+  ),
+  
+  // 🍜 BOWL MEDIA: Più larga, riempimento medio
+  BowlM: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9c0 5 4 9 9 9s9-4 9-9H3z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M3 9c0-1.5 2.5-3 6-3s6 1.5 6 3" />
+    </svg>
+  ),
+  
+  // 🍲 BOWL GRANDE: Capiente, riempimento abbondante
+  BowlL: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 8c0 5.5 4.5 10 10 10s10-4.5 10-10H2z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M2 8c0-2.5 3-4.5 7-4.5s7 2 7 4.5" />
     </svg>
   )
 };
@@ -42,10 +72,11 @@ export default function OrdinlampoAdmin() {
     { id: 'coldirodi', name: 'Coldirodi', fee: 6.00, estimatedTime: '20-25 min', active: true }
   ]);
 
+  // Rimosso campo emoji - usano SVG ora
   const [pokeSizes, setPokeSizes] = useState([
-    { id: 'small', name: 'Piccola', price: 8.50, emoji: '🥣' },
-    { id: 'medium', name: 'Media', price: 10.50, emoji: '🍜' },
-    { id: 'large', name: 'Grande', price: 12.50, emoji: '🍲' }
+    { id: 'small', name: 'Piccola', price: 8.50 },
+    { id: 'medium', name: 'Media', price: 10.50 },
+    { id: 'large', name: 'Grande', price: 12.50 }
   ]);
 
   const [extraPrices, setExtraPrices] = useState({ protein: 1.00, ingredient: 0.50, sauce: 0.30 });
@@ -188,6 +219,17 @@ export default function OrdinlampoAdmin() {
     setTimeout(() => setShowSaveNotification(false), 3000);
   };
 
+  // Helper per renderizzare l'icona Bowl corretta (DA GEMINI)
+  const renderBowlIcon = (sizeId) => {
+    const iconClass = "text-yellow-500"; // Oro per tutte
+    switch (sizeId) {
+      case 'small': return <Icons.BowlS className={`w-8 h-8 ${iconClass}`} />;
+      case 'medium': return <Icons.BowlM className={`w-10 h-10 ${iconClass}`} />;
+      case 'large': return <Icons.BowlL className={`w-12 h-12 ${iconClass}`} />;
+      default: return <Icons.BowlM className={`w-10 h-10 ${iconClass}`} />;
+    }
+  };
+
   // ============================================
   // EFFECTS
   // ============================================
@@ -277,26 +319,26 @@ export default function OrdinlampoAdmin() {
 
   if (loading) {
     return (
-      <div className={`min-h-screen ${BG_CREAM} flex items-center justify-center`}>
+      <div className={`min-h-screen ${BG_DARK} flex items-center justify-center`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 font-medium">Caricamento...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-4"></div>
+          <p className={`${TEXT_PRIMARY} font-medium`}>Caricamento...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen ${BG_CREAM} py-8 px-4 relative overflow-hidden font-sans`}>
+    <div className={`min-h-screen ${BG_DARK} py-8 px-4 relative overflow-hidden font-sans`}>
       
       <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
-        <div className={`bg-gradient-to-br from-[#FFFBF0] to-[#FEF6E4] rounded-2xl shadow-lg p-8 mb-8 border-2 border-yellow-500/30`}>
+        <div className={`${BG_CARD} rounded-2xl shadow-2xl p-8 mb-8 border-2 ${BORDER_GOLD}`}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-3xl font-bold text-gray-900">⚙️ Admin Panel</h1>
+                <h1 className={`text-3xl font-bold ${TEXT_PRIMARY}`}>⚙️ Admin Panel</h1>
                 {getStatusBadge()}
                 
                 {unreadCount > 0 && (
@@ -311,7 +353,7 @@ export default function OrdinlampoAdmin() {
               </div>
               <div className="flex items-center gap-2">
                 <span className={`w-3 h-3 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                <span className="text-sm text-gray-600 font-medium">
+                <span className={`text-sm ${TEXT_SECONDARY} font-medium`}>
                   {connectionStatus === 'connected' ? 'Database Connesso' : 'Errore Connessione'}
                 </span>
               </div>
@@ -327,7 +369,7 @@ export default function OrdinlampoAdmin() {
           </div>
         </div>
 
-        {/* Notifica Salvataggio con Busta Rossa (UNICO SIMBOLO RIMASTO) */}
+        {/* Notifica Salvataggio con Busta Rossa */}
         {showSaveNotification && (
           <div className="fixed top-8 right-8 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border-2 border-yellow-500 animate-bounce-subtle">
             <Icons.RedEnvelope className="w-10 h-10" />
@@ -383,8 +425,8 @@ export default function OrdinlampoAdmin() {
         )}
 
         {/* Tabs */}
-        <div className={`bg-gradient-to-br from-[#FFFBF0] to-[#FEF6E4] rounded-2xl shadow-lg border-2 border-yellow-500/30 mb-8 overflow-hidden`}>
-          <div className="flex border-b-2 border-yellow-500/20 overflow-x-auto bg-gradient-to-r from-amber-50 to-orange-50">
+        <div className={`${BG_CARD} rounded-2xl shadow-2xl border-2 ${BORDER_GOLD} mb-8 overflow-hidden`}>
+          <div className="flex border-b-2 border-yellow-500/30 overflow-x-auto bg-slate-700/50">
             {[
               { id: 'locations', label: 'Località', icon: MapPin },
               { id: 'prices', label: 'Prezzi', icon: DollarSign },
@@ -401,7 +443,7 @@ export default function OrdinlampoAdmin() {
                 className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-yellow-500/20 last:border-r-0 ${
                   activeTab === tab.id 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
-                    : 'text-gray-700 hover:bg-yellow-50'
+                    : `${TEXT_SECONDARY} hover:bg-slate-700`
                 }`}
               >
                 <tab.icon className="w-5 h-5" />
@@ -420,79 +462,79 @@ export default function OrdinlampoAdmin() {
             {/* TAB LOCALITÀ */}
             {activeTab === 'locations' && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Zone Consegna</h2>
+                <h2 className={`text-2xl font-bold ${TEXT_PRIMARY} mb-6`}>Zone Consegna</h2>
                 {locations.map(loc => (
                   <div
                     key={loc.id}
-                    className={`bg-gradient-to-r from-[#FFFBF0] to-white p-6 rounded-2xl flex items-center justify-between border-2 shadow-md ${
-                      !loc.active ? 'opacity-60 border-dashed border-gray-300' : 'border-yellow-500/40 shadow-yellow-500/20'
+                    className={`${BG_CARD_HOVER} p-6 rounded-2xl flex items-center justify-between border-2 shadow-lg transition-all hover:shadow-xl ${
+                      !loc.active ? 'opacity-60 border-dashed border-gray-600' : `${BORDER_GOLD} shadow-yellow-500/20`
                     }`}
                   >
                     <div className="flex-1">
                       {editingLocation === loc.id ? (
                         <div className="flex gap-2">
                           <input
-                            className="border-2 border-yellow-500/50 p-3 rounded-xl w-1/3 font-medium"
+                            className={`border-2 ${BORDER_GOLD} p-3 rounded-xl w-1/3 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                             defaultValue={loc.name}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'name', e.target.value)}
                           />
                           <input
-                            className="border-2 border-yellow-500/50 p-3 rounded-xl w-24 font-bold text-center"
+                            className={`border-2 ${BORDER_GOLD} p-3 rounded-xl w-24 font-bold text-center ${BG_DARK} ${TEXT_PRIMARY}`}
                             type="number"
                             step="0.50"
                             defaultValue={loc.fee}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'fee', parseFloat(e.target.value))}
                           />
                           <input
-                            className="border-2 border-yellow-500/50 p-3 rounded-xl w-1/3 font-medium"
+                            className={`border-2 ${BORDER_GOLD} p-3 rounded-xl w-1/3 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                             defaultValue={loc.estimatedTime}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'estimatedTime', e.target.value)}
                           />
                         </div>
                       ) : (
                         <div>
-                          <h3 className="font-bold text-xl text-gray-900">{loc.name}</h3>
-                          <p className="text-gray-700 font-medium">Tariffa: €{loc.fee.toFixed(2)} • Tempo: {loc.estimatedTime}</p>
+                          <h3 className={`font-bold text-xl ${TEXT_PRIMARY}`}>{loc.name}</h3>
+                          <p className={`${TEXT_SECONDARY} font-medium`}>Tariffa: €{loc.fee.toFixed(2)} • Tempo: {loc.estimatedTime}</p>
                         </div>
                       )}
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleLocationActive(loc.id)}
-                        className="p-3 bg-white rounded-xl border-2 border-yellow-500/50 hover:bg-yellow-50 transition-colors shadow-sm"
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-slate-700 transition-colors shadow-sm`}
                       >
-                        {loc.active ? <Eye className="w-5 h-5 text-green-600" /> : <EyeOff className="w-5 h-5 text-gray-400" />}
+                        {loc.active ? <Eye className="w-5 h-5 text-green-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
                       </button>
                       <button
                         onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)}
-                        className="p-3 bg-white rounded-xl border-2 border-yellow-500/50 hover:bg-yellow-50 transition-colors shadow-sm"
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-slate-700 transition-colors shadow-sm`}
                       >
-                        <Edit2 className="w-5 h-5 text-blue-600" />
+                        <Edit2 className="w-5 h-5 text-blue-500" />
                       </button>
                       <button
                         onClick={() => deleteLocation(loc.id)}
-                        className="p-3 bg-white rounded-xl border-2 border-yellow-500/50 hover:bg-red-50 transition-colors shadow-sm"
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-red-900 transition-colors shadow-sm`}
                       >
-                        <Trash2 className="w-5 h-5 text-red-600" />
+                        <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
                     </div>
                   </div>
                 ))}
                 
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border-2 border-blue-300 mt-6">
-                  <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
+                <div className="bg-blue-900/30 p-6 rounded-2xl border-2 border-blue-500 mt-6">
+                  <h3 className={`font-bold ${TEXT_PRIMARY} mb-4 flex items-center gap-2 text-lg`}>
                     <Plus className="w-6 h-6" />
                     Nuova Zona
                   </h3>
                   <div className="flex gap-3">
                     <input
-                      className="border-2 border-blue-300 p-3 rounded-xl flex-1 font-medium"
+                      className={`border-2 border-blue-500 p-3 rounded-xl flex-1 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                       placeholder="Nome zona"
                       value={newLocation.name}
                       onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
                     />
                     <input
-                      className="border-2 border-blue-300 p-3 rounded-xl w-28 font-bold text-center"
+                      className={`border-2 border-blue-500 p-3 rounded-xl w-28 font-bold text-center ${BG_DARK} ${TEXT_PRIMARY}`}
                       type="number"
                       step="0.50"
                       placeholder="€"
@@ -500,7 +542,7 @@ export default function OrdinlampoAdmin() {
                       onChange={(e) => setNewLocation({ ...newLocation, fee: e.target.value })}
                     />
                     <input
-                      className="border-2 border-blue-300 p-3 rounded-xl w-36 font-medium"
+                      className={`border-2 border-blue-500 p-3 rounded-xl w-36 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                       placeholder="20-25 min"
                       value={newLocation.estimatedTime}
                       onChange={(e) => setNewLocation({ ...newLocation, estimatedTime: e.target.value })}
@@ -516,53 +558,58 @@ export default function OrdinlampoAdmin() {
               </div>
             )}
 
-            {/* TAB PREZZI */}
+            {/* TAB PREZZI - CON ICONE SVG! */}
             {activeTab === 'prices' && (
               <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-8 rounded-2xl border-2 border-orange-300/50 shadow-lg">
-                  <h3 className="text-xl font-bold mb-6 text-gray-900">Taglie Bowl</h3>
+                <div className="bg-orange-900/20 p-8 rounded-2xl border-2 border-orange-500 shadow-lg">
+                  <h3 className={`text-xl font-bold mb-6 ${TEXT_PRIMARY}`}>Taglie Bowl</h3>
                   <div className="space-y-3">
                     {pokeSizes.map(size => (
                       <div
                         key={size.id}
-                        className="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border-2 border-yellow-500/30"
+                        className={`${BG_CARD_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_GOLD}`}
                       >
-                        <span className="font-bold text-lg text-gray-900">
-                          {size.emoji} {size.name}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-700 font-medium">€</span>
-                          <input
-                            type="number"
-                            step="0.50"
-                            className="border-2 border-yellow-500/50 p-2 w-24 rounded-lg text-center font-bold text-gray-900"
-                            value={size.price}
-                            onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
-                          />
+                        <div className="flex justify-between items-center">
+                          <span className={`font-bold text-lg ${TEXT_PRIMARY} flex items-center gap-3`}>
+                            {renderBowlIcon(size.id)}
+                            {size.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`${TEXT_SECONDARY} font-medium`}>€</span>
+                            <input
+                              type="number"
+                              step="0.50"
+                              className={`border-2 ${BORDER_GOLD} p-2 w-24 rounded-lg text-center font-bold ${BG_DARK} ${TEXT_PRIMARY}`}
+                              value={size.price}
+                              onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
                 
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl border-2 border-green-300/50 shadow-lg">
-                  <h3 className="text-xl font-bold mb-6 text-gray-900">Prezzi Extra</h3>
+                <div className="bg-green-900/20 p-8 rounded-2xl border-2 border-green-500 shadow-lg">
+                  <h3 className={`text-xl font-bold mb-6 ${TEXT_PRIMARY}`}>Prezzi Extra</h3>
                   <div className="space-y-3">
                     {Object.entries(extraPrices).map(([key, val]) => (
                       <div
                         key={key}
-                        className="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border-2 border-yellow-500/30"
+                        className={`${BG_CARD_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_GOLD}`}
                       >
-                        <span className="capitalize font-bold text-gray-900">{key}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-700 font-medium">€</span>
-                          <input
-                            type="number"
-                            step="0.10"
-                            className="border-2 border-yellow-500/50 p-2 w-24 rounded-lg text-center font-bold text-gray-900"
-                            value={val}
-                            onChange={(e) => updateExtraPrice(key, e.target.value)}
-                          />
+                        <div className="flex justify-between items-center">
+                          <span className={`capitalize font-bold ${TEXT_PRIMARY}`}>{key}</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`${TEXT_SECONDARY} font-medium`}>€</span>
+                            <input
+                              type="number"
+                              step="0.10"
+                              className={`border-2 ${BORDER_GOLD} p-2 w-24 rounded-lg text-center font-bold ${BG_DARK} ${TEXT_PRIMARY}`}
+                              value={val}
+                              onChange={(e) => updateExtraPrice(key, e.target.value)}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -573,16 +620,16 @@ export default function OrdinlampoAdmin() {
 
             {/* TAB ABBONAMENTO */}
             {activeTab === 'subscription' && (
-              <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-10 rounded-3xl border-4 border-yellow-500/50 shadow-2xl">
+              <div className="bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30 p-10 rounded-3xl border-4 border-yellow-500 shadow-2xl">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                   <div>
-                    <p className="text-indigo-700 font-bold uppercase tracking-wider text-sm mb-2">Il tuo piano</p>
-                    <h2 className="text-5xl font-black text-gray-900 mb-3">
+                    <p className="text-indigo-400 font-bold uppercase tracking-wider text-sm mb-2">Il tuo piano</p>
+                    <h2 className={`text-5xl font-black ${TEXT_PRIMARY} mb-3`}>
                       {planId === 'pro' ? 'PIANO PRO 🚀' : 'PIANO BASIC'}
                     </h2>
-                    <p className="text-gray-700 flex items-center gap-2 font-medium text-lg">
+                    <p className={`${TEXT_SECONDARY} flex items-center gap-2 font-medium text-lg`}>
                       Stato:{' '}
-                      <span className={`font-bold ${subscriptionStatus === 'active' ? 'text-green-600' : 'text-orange-600'}`}>
+                      <span className={`font-bold ${subscriptionStatus === 'active' ? 'text-green-500' : 'text-orange-500'}`}>
                         {subscriptionStatus.toUpperCase()}
                       </span>
                     </p>
@@ -604,23 +651,23 @@ export default function OrdinlampoAdmin() {
             {/* TAB IMPOSTAZIONI */}
             {activeTab === 'settings' && (
               <div className="space-y-8">
-                <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-8 rounded-2xl border-2 border-gray-300/50 shadow-lg">
-                  <h3 className="font-bold text-xl mb-6 text-gray-900">Generale</h3>
+                <div className={`${BG_CARD_HOVER} p-8 rounded-2xl border-2 ${BORDER_GOLD} shadow-lg`}>
+                  <h3 className={`font-bold text-xl mb-6 ${TEXT_PRIMARY}`}>Generale</h3>
                   <div className="space-y-5">
                     <div>
-                      <label className="block font-bold text-gray-700 mb-2">Nome Ristorante</label>
+                      <label className={`block font-bold ${TEXT_SECONDARY} mb-2`}>Nome Ristorante</label>
                       <input
                         type="text"
-                        className="w-full border-2 border-yellow-500/50 p-4 rounded-xl font-medium text-gray-900"
+                        className={`w-full border-2 ${BORDER_GOLD} p-4 rounded-xl font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                         value={restaurantName}
                         onChange={(e) => setRestaurantName(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label className="block font-bold text-gray-700 mb-2">WhatsApp</label>
+                      <label className={`block font-bold ${TEXT_SECONDARY} mb-2`}>WhatsApp</label>
                       <input
                         type="text"
-                        className="w-full border-2 border-yellow-500/50 p-4 rounded-xl font-medium text-gray-900"
+                        className={`w-full border-2 ${BORDER_GOLD} p-4 rounded-xl font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                         placeholder="393331234567"
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
@@ -630,11 +677,11 @@ export default function OrdinlampoAdmin() {
                 </div>
 
                 {/* Toggle Delivery */}
-                <div className="bg-white p-8 rounded-2xl border-4 border-blue-300 shadow-xl">
+                <div className={`${BG_CARD_HOVER} p-8 rounded-2xl border-4 border-blue-500 shadow-xl`}>
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                      <h3 className="font-bold text-2xl text-gray-900">Modalità Operativa</h3>
-                      <p className={`font-bold mt-2 text-lg ${deliveryEnabled ? 'text-green-600' : 'text-blue-600'}`}>
+                      <h3 className={`font-bold text-2xl ${TEXT_PRIMARY}`}>Modalità Operativa</h3>
+                      <p className={`font-bold mt-2 text-lg ${deliveryEnabled ? 'text-green-500' : 'text-blue-500'}`}>
                         {deliveryEnabled ? '✅ DELIVERY + ASPORTO ATTIVI' : '🏪 SOLO RITIRO AL LOCALE'}
                       </p>
                     </div>
@@ -662,15 +709,15 @@ export default function OrdinlampoAdmin() {
                         } catch (error) {
                           console.error('Errore delivery toggle:', error);
                           alert('❌ Errore nel salvataggio');
-                          setDeliveryEnabled(!newValue);
+                          setDeliveryEnabled(!newVal);
                         }
                       }}
                       className={`w-24 h-12 rounded-full relative transition-colors duration-300 shadow-lg border-2 ${
-                        deliveryEnabled ? 'bg-gradient-to-r from-green-500 to-green-600 border-green-400' : 'bg-gray-300 border-gray-400'
+                        deliveryEnabled ? 'bg-gradient-to-r from-green-500 to-green-600 border-green-400' : 'bg-gray-600 border-gray-500'
                       }`}
                     >
                       <div
-                        className={`w-10 h-10 bg-white rounded-full absolute top-1 shadow-md transition-all duration-300 border-2 border-gray-200 ${
+                        className={`w-10 h-10 bg-white rounded-full absolute top-1 shadow-md transition-all duration-300 border-2 border-gray-300 ${
                           deliveryEnabled ? 'left-[52px]' : 'left-1'
                         }`}
                       ></div>
@@ -684,10 +731,10 @@ export default function OrdinlampoAdmin() {
             {activeTab === 'orders' && (
               <div>
                 <div className="flex justify-between items-center mb-8">
-                  <h2 className="text-3xl font-bold text-gray-900">Storico Ordini</h2>
+                  <h2 className={`text-3xl font-bold ${TEXT_PRIMARY}`}>Storico Ordini</h2>
                   <button
                     onClick={loadOrders}
-                    className="text-blue-700 hover:bg-blue-50 px-6 py-3 rounded-xl font-bold transition-colors border-2 border-blue-300 shadow-md"
+                    className="text-blue-400 hover:bg-slate-700 px-6 py-3 rounded-xl font-bold transition-colors border-2 border-blue-500 shadow-md"
                   >
                     🔄 Aggiorna Lista
                   </button>
@@ -695,23 +742,23 @@ export default function OrdinlampoAdmin() {
                 
                 {loadingOrders ? (
                   <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
-                    <p className="text-gray-700 font-medium text-lg">Caricamento ordini...</p>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-4"></div>
+                    <p className={`${TEXT_PRIMARY} font-medium text-lg`}>Caricamento ordini...</p>
                   </div>
                 ) : orders.length === 0 ? (
-                  <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-12 text-center border-2 border-gray-300 shadow-inner">
+                  <div className={`${BG_CARD_HOVER} rounded-2xl p-12 text-center border-2 border-gray-700 shadow-inner`}>
                     <p className="text-6xl mb-4">📭</p>
-                    <p className="text-gray-700 text-xl font-bold">Nessun ordine ancora</p>
-                    <p className="text-gray-600 text-sm mt-2">Gli ordini appariranno qui quando i clienti ordinano</p>
+                    <p className={`${TEXT_PRIMARY} text-xl font-bold`}>Nessun ordine ancora</p>
+                    <p className={`${TEXT_SECONDARY} text-sm mt-2`}>Gli ordini appariranno qui quando i clienti ordinano</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {orders.map(order => (
                       <div
                         key={order.id}
-                        className={`${BG_IVORY} rounded-2xl shadow-lg border-2 border-yellow-500/30 overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
+                        className={`${BG_CARD_HOVER} rounded-2xl shadow-lg border-2 ${BORDER_GOLD} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
                       >
-                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-amber-50 to-orange-50">
+                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-700/50">
                           <div className="flex items-center gap-4 w-full md:w-auto">
                             <div
                               className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
@@ -721,8 +768,8 @@ export default function OrdinlampoAdmin() {
                               {order.order_type === 'delivery' ? '🛵' : '🥡'}
                             </div>
                             <div>
-                              <h3 className="font-black text-xl text-gray-900">#{order.order_number || order.id?.slice(0, 8)}</h3>
-                              <p className="text-sm text-gray-600 font-medium">
+                              <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>#{order.order_number || order.id?.slice(0, 8)}</h3>
+                              <p className={`text-sm ${TEXT_SECONDARY} font-medium`}>
                                 {new Date(order.created_at).toLocaleString('it-IT')}
                               </p>
                             </div>
@@ -730,10 +777,10 @@ export default function OrdinlampoAdmin() {
                           
                           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                             <div className="text-right mr-2">
-                              <p className="font-black text-2xl text-green-600">
+                              <p className="font-black text-2xl text-green-500">
                                 €{(order.total_amount || order.total || 0).toFixed(2)}
                               </p>
-                              <p className="text-xs text-gray-600 capitalize font-medium">
+                              <p className={`text-xs ${TEXT_SECONDARY} capitalize font-medium`}>
                                 {order.payment_method || 'N/A'}
                               </p>
                             </div>
@@ -750,7 +797,7 @@ export default function OrdinlampoAdmin() {
                             
                             <button
                               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                              className="bg-gray-100 text-gray-700 p-4 rounded-xl hover:bg-gray-200 transition-colors shadow-md"
+                              className="bg-slate-600 text-gray-200 p-4 rounded-xl hover:bg-slate-500 transition-colors shadow-md"
                             >
                               {expandedOrderId === order.id ? (
                                 <ChevronUp className="w-6 h-6" />
@@ -762,44 +809,44 @@ export default function OrdinlampoAdmin() {
                         </div>
 
                         {expandedOrderId === order.id && (
-                          <div className="p-6 border-t-2 border-yellow-500/20 bg-gradient-to-br from-white to-amber-50">
+                          <div className={`p-6 border-t-2 border-yellow-500/20 ${BG_CARD}`}>
                             <div className="grid md:grid-cols-2 gap-8">
                               <div>
-                                <h4 className="font-bold text-gray-800 mb-3 uppercase text-xs tracking-wider">
+                                <h4 className={`font-bold ${TEXT_SECONDARY} mb-3 uppercase text-xs tracking-wider`}>
                                   Dati Cliente
                                 </h4>
-                                <p className="font-bold text-xl text-gray-900">{order.customer_name || 'N/A'}</p>
-                                <p className="text-gray-700 flex items-center gap-2 font-medium">
+                                <p className={`font-bold text-xl ${TEXT_PRIMARY}`}>{order.customer_name || 'N/A'}</p>
+                                <p className={`${TEXT_SECONDARY} flex items-center gap-2 font-medium`}>
                                   <Phone className="w-4 h-4" />
                                   {order.customer_phone || 'N/A'}
                                 </p>
                                 {order.delivery_address && (
-                                  <p className="text-gray-700 mt-2 font-medium">
+                                  <p className={`${TEXT_SECONDARY} mt-2 font-medium`}>
                                     📍 {order.delivery_address} {order.customer_city || ''}
                                   </p>
                                 )}
                                 {order.customer_notes_order && (
-                                  <div className="mt-4 bg-yellow-50 p-4 rounded-xl text-sm text-yellow-900 border-2 border-yellow-300 font-medium">
+                                  <div className="mt-4 bg-yellow-900/30 p-4 rounded-xl text-sm text-yellow-400 border-2 border-yellow-600 font-medium">
                                     📝 Note: {order.customer_notes_order}
                                   </div>
                                 )}
                               </div>
                               
                               <div>
-                                <h4 className="font-bold text-gray-800 mb-3 uppercase text-xs tracking-wider">
+                                <h4 className={`font-bold ${TEXT_SECONDARY} mb-3 uppercase text-xs tracking-wider`}>
                                   Riepilogo Ordine
                                 </h4>
                                 <div className="space-y-2 text-sm">
                                   {order.order_details ? (
-                                    <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
-                                      <pre className="whitespace-pre-wrap text-xs overflow-x-auto text-gray-800 font-mono">
+                                    <div className="bg-blue-900/30 rounded-xl p-4 border-2 border-blue-600">
+                                      <pre className={`whitespace-pre-wrap text-xs overflow-x-auto ${TEXT_SECONDARY} font-mono`}>
                                         {JSON.stringify(order.order_details, null, 2)}
                                       </pre>
                                     </div>
                                   ) : (
-                                    <div className="flex justify-between font-black text-2xl pt-3 border-t-2 border-gray-300">
-                                      <span className="text-gray-900">TOTALE</span>
-                                      <span className="text-green-600">€{(order.total_amount || order.total || 0).toFixed(2)}</span>
+                                    <div className="flex justify-between font-black text-2xl pt-3 border-t-2 border-gray-600">
+                                      <span className={TEXT_PRIMARY}>TOTALE</span>
+                                      <span className="text-green-500">€{(order.total_amount || order.total || 0).toFixed(2)}</span>
                                     </div>
                                   )}
                                 </div>
@@ -818,7 +865,7 @@ export default function OrdinlampoAdmin() {
         </div>
       </div>
 
-      {/* Animation Styles - Ridotte al minimo (solo per la busta e il bounce) */}
+      {/* Animation Styles */}
       <style>{`
         @keyframes bounce-subtle {
           0%, 100% {
@@ -836,4 +883,3 @@ export default function OrdinlampoAdmin() {
     </div>
   );
 }
-
