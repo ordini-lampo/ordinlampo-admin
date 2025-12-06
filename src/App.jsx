@@ -303,12 +303,12 @@ export default function OrdinlampoAdmin() {
   const getStatusBadge = () => {
     if (planId === 'pro' && subscriptionStatus === 'active') {
       return (
-        <span className="px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-yellow-500 to-orange-600 text-white flex items-center gap-1 shadow-lg shadow-orange-500/30">
+        <span className="px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white flex items-center gap-1 shadow-lg shadow-[#608beb]/30">
           <Star className="w-4 h-4" /> PRO
         </span>
       );
     }
-    return <span className="px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg">Trial</span>;
+    return <span className="px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white shadow-lg">Trial</span>;
   };
 
   // ============================================
@@ -547,7 +547,7 @@ export default function OrdinlampoAdmin() {
                     />
                     <button
                       onClick={addLocation}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
+                      className="bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white px-8 rounded-xl font-bold hover:from-[#4a7bd9] hover:to-[#3a6bc9] transition-all shadow-lg"
                     >
                       AGGIUNGI
                     </button>
@@ -559,7 +559,7 @@ export default function OrdinlampoAdmin() {
             {/* TAB PREZZI - CON ICONE SVG! */}
             {activeTab === 'prices' && (
               <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-orange-900/20 p-8 rounded-2xl border border-orange-500 shadow-lg">
+                <div className="bg-[#608beb]/10 p-8 rounded-2xl border border-[#608beb] shadow-lg">
                   <h3 className={`text-xl font-bold mb-6 ${TEXT_PRIMARY}`}>Taglie Bowl</h3>
                   <div className="space-y-3">
                     {pokeSizes.map(size => (
@@ -602,7 +602,7 @@ export default function OrdinlampoAdmin() {
                   </div>
                 </div>
                 
-                <div className="bg-green-900/20 p-8 rounded-2xl border border-green-500 shadow-lg">
+                <div className="bg-[#608beb]/10 p-8 rounded-2xl border border-[#608beb] shadow-lg">
                   <h3 className={`text-xl font-bold mb-6 ${TEXT_PRIMARY}`}>Prezzi Extra</h3>
                   <div className="space-y-3">
                     {Object.entries(extraPrices).map(([key, val]) => (
@@ -664,7 +664,7 @@ export default function OrdinlampoAdmin() {
                     <button
                       onClick={() => handleSubscribe(STRIPE_PRICES.pro)}
                       disabled={checkoutLoading}
-                      className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl shadow-orange-500/50 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 border border-[#608beb]"
+                      className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl shadow-[#608beb]/50 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 border border-[#608beb]"
                     >
                       <Star className="w-6 h-6 fill-current" />
                       {checkoutLoading ? 'Attendere...' : 'PASSA A PRO - €39.90'}
@@ -788,7 +788,7 @@ export default function OrdinlampoAdmin() {
                           <div className="flex items-center gap-4 w-full md:w-auto">
                             <div
                               className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
-                                order.order_type === 'delivery' ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                                order.order_type === 'delivery' ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-[#608beb] to-[#4a7bd9]'
                               }`}
                             >
                               {order.order_type === 'delivery' ? '🛵' : '🥡'}
