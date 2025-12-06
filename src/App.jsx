@@ -13,13 +13,13 @@ const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
 
-// 🎨 GRIGIO ZEN PALETTE (UN SOLO GRIGIO UNIFORME!)
-const BG_DARK = 'bg-zinc-900'; // #18181b - TUTTO UGUALE (pagina + card + input)
-const BG_CARD = 'bg-zinc-900'; // #18181b - TUTTO UGUALE (separazione solo con bordi oro)
-const BG_CARD_HOVER = 'bg-zinc-800'; // #27272a - Solo hover leggermente più chiaro
+// 🎨 GRIGIO PURO + BLU AZZURRO (v4.4 FINALE ZEN)
+const BG_DARK = 'bg-zinc-800'; // #27272a - UN SOLO GRIGIO (tutto uguale!)
+const BG_CARD = 'bg-zinc-800'; // #27272a - UN SOLO GRIGIO (come Claude.ai sidebar)
+const BG_CARD_HOVER = 'bg-zinc-700'; // #3f3f46 - Solo hover leggermente più chiaro
 const TEXT_PRIMARY = 'text-gray-50'; // #F9FAFB - Testo principale
 const TEXT_SECONDARY = 'text-gray-400'; // #9CA3AF - Testo secondario
-const BORDER_GOLD = 'border-yellow-500'; // #F59E0B - Bordi oro (VISIBILE!)
+const BORDER_BLUE = 'border-sky-400'; // #38BDF8 - Bordi blu azzurro (riposante!)
 const ACCENT_RED = 'bg-red-600'; // #DC2626 - Rosso fortuna
 const ACCENT_GREEN = 'bg-green-600'; // #10B981 - Verde successo
 
@@ -222,7 +222,7 @@ export default function OrdinlampoAdmin() {
 
   // Helper per renderizzare l'icona Bowl corretta (DA GEMINI)
   const renderBowlIcon = (sizeId) => {
-    const iconClass = "text-yellow-500"; // Oro per tutte
+    const iconClass = "text-sky-400"; // Blu azzurro per tutte
     switch (sizeId) {
       case 'small': return <Icons.BowlS className={`w-8 h-8 ${iconClass}`} />;
       case 'medium': return <Icons.BowlM className={`w-10 h-10 ${iconClass}`} />;
@@ -322,7 +322,7 @@ export default function OrdinlampoAdmin() {
     return (
       <div className={`min-h-screen ${BG_DARK} flex items-center justify-center`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-sky-400 mx-auto mb-4"></div>
           <p className={`${TEXT_PRIMARY} font-medium`}>Caricamento...</p>
         </div>
       </div>
@@ -335,7 +335,7 @@ export default function OrdinlampoAdmin() {
       <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
-        <div className={`${BG_CARD} rounded-2xl shadow-2xl p-8 mb-8 border-2 ${BORDER_GOLD}`}>
+        <div className={`${BG_CARD} rounded-2xl shadow-2xl p-8 mb-8 border-2 ${BORDER_BLUE}`}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -372,7 +372,7 @@ export default function OrdinlampoAdmin() {
 
         {/* Notifica Salvataggio con Busta Rossa */}
         {showSaveNotification && (
-          <div className="fixed top-8 right-8 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border-2 border-yellow-500 animate-bounce-subtle">
+          <div className="fixed top-8 right-8 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border-2 border-sky-400 animate-bounce-subtle">
             <Icons.RedEnvelope className="w-10 h-10" />
             <div>
               <p className="font-bold text-lg">Salvato con successo!</p>
@@ -384,7 +384,7 @@ export default function OrdinlampoAdmin() {
         {/* Alert Nuovo Ordine */}
         {showNewOrderAlert && newOrders.length > 0 && (
           <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4">
-            <div className="bg-gradient-to-br from-red-600 to-red-800 text-white p-8 rounded-3xl shadow-2xl border-4 border-yellow-500 ring-4 ring-red-300 animate-bounce-subtle">
+            <div className="bg-gradient-to-br from-red-600 to-red-800 text-white p-8 rounded-3xl shadow-2xl border-4 border-sky-400 ring-4 ring-red-300 animate-bounce-subtle">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center gap-4">
                   <span className="text-5xl">🔔</span>
@@ -406,7 +406,7 @@ export default function OrdinlampoAdmin() {
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <a
                   href={`tel:${newOrders[0]?.customer_phone || ''}`}
-                  className="bg-white text-red-600 py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 hover:bg-yellow-50 transition-colors shadow-lg"
+                  className="bg-white text-red-600 py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 hover:bg-sky-50 transition-colors shadow-lg"
                 >
                   <Phone className="w-6 h-6" />
                   CHIAMA ORA
@@ -416,7 +416,7 @@ export default function OrdinlampoAdmin() {
                     setActiveTab('orders');
                     setShowNewOrderAlert(false);
                   }}
-                  className="bg-red-900 text-white py-4 rounded-xl font-bold border-2 border-yellow-500 hover:bg-red-950 transition-colors"
+                  className="bg-red-900 text-white py-4 rounded-xl font-bold border-2 border-sky-400 hover:bg-red-950 transition-colors"
                 >
                   VISUALIZZA
                 </button>
@@ -426,8 +426,8 @@ export default function OrdinlampoAdmin() {
         )}
 
         {/* Tabs */}
-        <div className={`${BG_CARD} rounded-2xl shadow-2xl border-2 ${BORDER_GOLD} mb-8 overflow-hidden`}>
-          <div className="flex border-b-2 border-yellow-500/30 overflow-x-auto bg-zinc-800/50">
+        <div className={`${BG_CARD} rounded-2xl shadow-2xl border-2 ${BORDER_BLUE} mb-8 overflow-hidden`}>
+          <div className="flex border-b-2 border-sky-400/30 overflow-x-auto bg-zinc-800/50">
             {[
               { id: 'locations', label: 'Località', icon: MapPin },
               { id: 'prices', label: 'Prezzi', icon: DollarSign },
@@ -441,7 +441,7 @@ export default function OrdinlampoAdmin() {
                   setActiveTab(tab.id);
                   if (tab.id === 'orders') setUnreadCount(0);
                 }}
-                className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-yellow-500/20 last:border-r-0 ${
+                className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-sky-400/20 last:border-r-0 ${
                   activeTab === tab.id 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
                     : `${TEXT_SECONDARY} hover:bg-zinc-800`
@@ -450,7 +450,7 @@ export default function OrdinlampoAdmin() {
                 <tab.icon className="w-5 h-5" />
                 <span>{tab.label}</span>
                 {tab.id === 'orders' && unreadCount > 0 && (
-                  <span className="bg-yellow-500 text-red-900 text-xs px-2 py-1 rounded-full font-black shadow-inner">
+                  <span className="bg-sky-400 text-red-900 text-xs px-2 py-1 rounded-full font-black shadow-inner">
                     {unreadCount}
                   </span>
                 )}
@@ -468,26 +468,26 @@ export default function OrdinlampoAdmin() {
                   <div
                     key={loc.id}
                     className={`${BG_CARD_HOVER} p-6 rounded-2xl flex items-center justify-between border-2 shadow-lg transition-all hover:shadow-xl ${
-                      !loc.active ? 'opacity-60 border-dashed border-gray-600' : `${BORDER_GOLD} shadow-yellow-500/20`
+                      !loc.active ? 'opacity-60 border-dashed border-gray-600' : `${BORDER_BLUE} shadow-sky-500/20`
                     }`}
                   >
                     <div className="flex-1">
                       {editingLocation === loc.id ? (
                         <div className="flex gap-2">
                           <input
-                            className={`border-2 ${BORDER_GOLD} p-3 rounded-xl w-1/3 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
+                            className={`border-2 ${BORDER_BLUE} p-3 rounded-xl w-1/3 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                             defaultValue={loc.name}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'name', e.target.value)}
                           />
                           <input
-                            className={`border-2 ${BORDER_GOLD} p-3 rounded-xl w-24 font-bold text-center ${BG_DARK} ${TEXT_PRIMARY}`}
+                            className={`border-2 ${BORDER_BLUE} p-3 rounded-xl w-24 font-bold text-center ${BG_DARK} ${TEXT_PRIMARY}`}
                             type="number"
                             step="0.50"
                             defaultValue={loc.fee}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'fee', parseFloat(e.target.value))}
                           />
                           <input
-                            className={`border-2 ${BORDER_GOLD} p-3 rounded-xl w-1/3 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
+                            className={`border-2 ${BORDER_BLUE} p-3 rounded-xl w-1/3 font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                             defaultValue={loc.estimatedTime}
                             onBlur={(e) => updateGeneric(setLocations, loc.id, 'estimatedTime', e.target.value)}
                           />
@@ -502,19 +502,19 @@ export default function OrdinlampoAdmin() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleLocationActive(loc.id)}
-                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-zinc-800 transition-colors shadow-sm`}
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_BLUE} hover:bg-zinc-800 transition-colors shadow-sm`}
                       >
                         {loc.active ? <Eye className="w-5 h-5 text-green-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
                       </button>
                       <button
                         onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)}
-                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-zinc-800 transition-colors shadow-sm`}
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_BLUE} hover:bg-zinc-800 transition-colors shadow-sm`}
                       >
                         <Edit2 className="w-5 h-5 text-blue-500" />
                       </button>
                       <button
                         onClick={() => deleteLocation(loc.id)}
-                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-red-900 transition-colors shadow-sm`}
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_BLUE} hover:bg-red-900 transition-colors shadow-sm`}
                       >
                         <Trash2 className="w-5 h-5 text-red-500" />
                       </button>
@@ -568,7 +568,7 @@ export default function OrdinlampoAdmin() {
                     {pokeSizes.map(size => (
                       <div
                         key={size.id}
-                        className={`${BG_CARD_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_GOLD}`}
+                        className={`${BG_CARD_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_BLUE}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className={`font-bold text-lg ${TEXT_PRIMARY} flex items-center gap-3`}>
@@ -580,7 +580,7 @@ export default function OrdinlampoAdmin() {
                             <input
                               type="number"
                               step="0.50"
-                              className={`border-2 ${BORDER_GOLD} p-2 w-24 rounded-lg text-center font-bold ${BG_DARK} ${TEXT_PRIMARY}`}
+                              className={`border-2 ${BORDER_BLUE} p-2 w-24 rounded-lg text-center font-bold ${BG_DARK} ${TEXT_PRIMARY}`}
                               value={size.price}
                               onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
                             />
@@ -597,7 +597,7 @@ export default function OrdinlampoAdmin() {
                     {Object.entries(extraPrices).map(([key, val]) => (
                       <div
                         key={key}
-                        className={`${BG_CARD_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_GOLD}`}
+                        className={`${BG_CARD_HOVER} p-4 rounded-xl shadow-md border-2 ${BORDER_BLUE}`}
                       >
                         <div className="flex justify-between items-center">
                           <span className={`capitalize font-bold ${TEXT_PRIMARY}`}>{key}</span>
@@ -606,7 +606,7 @@ export default function OrdinlampoAdmin() {
                             <input
                               type="number"
                               step="0.10"
-                              className={`border-2 ${BORDER_GOLD} p-2 w-24 rounded-lg text-center font-bold ${BG_DARK} ${TEXT_PRIMARY}`}
+                              className={`border-2 ${BORDER_BLUE} p-2 w-24 rounded-lg text-center font-bold ${BG_DARK} ${TEXT_PRIMARY}`}
                               value={val}
                               onChange={(e) => updateExtraPrice(key, e.target.value)}
                             />
@@ -621,7 +621,7 @@ export default function OrdinlampoAdmin() {
 
             {/* TAB ABBONAMENTO */}
             {activeTab === 'subscription' && (
-              <div className="bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30 p-10 rounded-3xl border-4 border-yellow-500 shadow-2xl">
+              <div className="bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30 p-10 rounded-3xl border-4 border-sky-400 shadow-2xl">
                 <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                   <div>
                     <p className="text-indigo-400 font-bold uppercase tracking-wider text-sm mb-2">Il tuo piano</p>
@@ -639,7 +639,7 @@ export default function OrdinlampoAdmin() {
                     <button
                       onClick={() => handleSubscribe(STRIPE_PRICES.pro)}
                       disabled={checkoutLoading}
-                      className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl shadow-orange-500/50 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 border-2 border-yellow-500"
+                      className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl shadow-orange-500/50 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 border-2 border-sky-400"
                     >
                       <Star className="w-6 h-6 fill-current" />
                       {checkoutLoading ? 'Attendere...' : 'PASSA A PRO - €39.90'}
@@ -652,14 +652,14 @@ export default function OrdinlampoAdmin() {
             {/* TAB IMPOSTAZIONI */}
             {activeTab === 'settings' && (
               <div className="space-y-8">
-                <div className={`${BG_CARD_HOVER} p-8 rounded-2xl border-2 ${BORDER_GOLD} shadow-lg`}>
+                <div className={`${BG_CARD_HOVER} p-8 rounded-2xl border-2 ${BORDER_BLUE} shadow-lg`}>
                   <h3 className={`font-bold text-xl mb-6 ${TEXT_PRIMARY}`}>Generale</h3>
                   <div className="space-y-5">
                     <div>
                       <label className={`block font-bold ${TEXT_SECONDARY} mb-2`}>Nome Ristorante</label>
                       <input
                         type="text"
-                        className={`w-full border-2 ${BORDER_GOLD} p-4 rounded-xl font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
+                        className={`w-full border-2 ${BORDER_BLUE} p-4 rounded-xl font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                         value={restaurantName}
                         onChange={(e) => setRestaurantName(e.target.value)}
                       />
@@ -668,7 +668,7 @@ export default function OrdinlampoAdmin() {
                       <label className={`block font-bold ${TEXT_SECONDARY} mb-2`}>WhatsApp</label>
                       <input
                         type="text"
-                        className={`w-full border-2 ${BORDER_GOLD} p-4 rounded-xl font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
+                        className={`w-full border-2 ${BORDER_BLUE} p-4 rounded-xl font-medium ${BG_DARK} ${TEXT_PRIMARY}`}
                         placeholder="393331234567"
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
@@ -743,7 +743,7 @@ export default function OrdinlampoAdmin() {
                 
                 {loadingOrders ? (
                   <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-500 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-sky-400 mx-auto mb-4"></div>
                     <p className={`${TEXT_PRIMARY} font-medium text-lg`}>Caricamento ordini...</p>
                   </div>
                 ) : orders.length === 0 ? (
@@ -757,7 +757,7 @@ export default function OrdinlampoAdmin() {
                     {orders.map(order => (
                       <div
                         key={order.id}
-                        className={`${BG_CARD_HOVER} rounded-2xl shadow-lg border-2 ${BORDER_GOLD} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
+                        className={`${BG_CARD_HOVER} rounded-2xl shadow-lg border-2 ${BORDER_BLUE} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
                       >
                         <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-800/50">
                           <div className="flex items-center gap-4 w-full md:w-auto">
@@ -810,7 +810,7 @@ export default function OrdinlampoAdmin() {
                         </div>
 
                         {expandedOrderId === order.id && (
-                          <div className={`p-6 border-t-2 border-yellow-500/20 ${BG_CARD}`}>
+                          <div className={`p-6 border-t-2 border-sky-400/20 ${BG_CARD}`}>
                             <div className="grid md:grid-cols-2 gap-8">
                               <div>
                                 <h4 className={`font-bold ${TEXT_SECONDARY} mb-3 uppercase text-xs tracking-wider`}>
@@ -827,7 +827,7 @@ export default function OrdinlampoAdmin() {
                                   </p>
                                 )}
                                 {order.customer_notes_order && (
-                                  <div className="mt-4 bg-yellow-900/30 p-4 rounded-xl text-sm text-yellow-400 border-2 border-yellow-600 font-medium">
+                                  <div className="mt-4 bg-sky-900/30 p-4 rounded-xl text-sm text-sky-300 border-2 border-sky-500 font-medium">
                                     📝 Note: {order.customer_notes_order}
                                   </div>
                                 )}
