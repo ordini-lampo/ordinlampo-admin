@@ -3,19 +3,20 @@ import { Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, Sett
 import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } from './supabaseClient';
 
 // ============================================
-// 💎 ADMIN PANEL ORDINLAMPO - DARK MODE ELEGANT (v4.1 SUPER-IBRIDO)
-// Design: Premium Dark, Professionale, Alto Contrasto
-// Update: Icone Bowl SVG Custom (Gemini) + Base Claude Stabile
+// 💎 ADMIN PANEL ORDINLAMPO - GRIGIO ZEN (v4.2 FINALE)
+// Design: Grigio Neutro Professionale (Zero Affaticamento Occhi)
+// Psychology: Zinc Grigio Puro (come VSCode) + Bowl SVG Custom
+// Optimized for: Miopia, Astigmatismo, Presbiopia (10-12h uso)
 // ============================================
 
 const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
 
-// 🎨 DARK MODE PALETTE (Elegante + Alto Contrasto)
-const BG_DARK = 'bg-slate-900'; // #111827 - Background principale
-const BG_CARD = 'bg-slate-800'; // #1F2937 - Card
-const BG_CARD_HOVER = 'bg-slate-700'; // #374151 - Hover state
+// 🎨 GRIGIO ZEN PALETTE (Neutro + Riposo Oculare)
+const BG_DARK = 'bg-zinc-950'; // #09090b - Background grigio neutro
+const BG_CARD = 'bg-zinc-900'; // #18181b - Card grigio antracite
+const BG_CARD_HOVER = 'bg-zinc-800'; // #27272a - Hover grigio caldo
 const TEXT_PRIMARY = 'text-gray-50'; // #F9FAFB - Testo principale
 const TEXT_SECONDARY = 'text-gray-400'; // #9CA3AF - Testo secondario
 const BORDER_GOLD = 'border-yellow-500'; // #F59E0B - Bordi oro (VISIBILE!)
@@ -426,7 +427,7 @@ export default function OrdinlampoAdmin() {
 
         {/* Tabs */}
         <div className={`${BG_CARD} rounded-2xl shadow-2xl border-2 ${BORDER_GOLD} mb-8 overflow-hidden`}>
-          <div className="flex border-b-2 border-yellow-500/30 overflow-x-auto bg-slate-700/50">
+          <div className="flex border-b-2 border-yellow-500/30 overflow-x-auto bg-zinc-800/50">
             {[
               { id: 'locations', label: 'Località', icon: MapPin },
               { id: 'prices', label: 'Prezzi', icon: DollarSign },
@@ -443,7 +444,7 @@ export default function OrdinlampoAdmin() {
                 className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-yellow-500/20 last:border-r-0 ${
                   activeTab === tab.id 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
-                    : `${TEXT_SECONDARY} hover:bg-slate-700`
+                    : `${TEXT_SECONDARY} hover:bg-zinc-800`
                 }`}
               >
                 <tab.icon className="w-5 h-5" />
@@ -501,13 +502,13 @@ export default function OrdinlampoAdmin() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleLocationActive(loc.id)}
-                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-slate-700 transition-colors shadow-sm`}
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-zinc-800 transition-colors shadow-sm`}
                       >
                         {loc.active ? <Eye className="w-5 h-5 text-green-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
                       </button>
                       <button
                         onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)}
-                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-slate-700 transition-colors shadow-sm`}
+                        className={`p-3 ${BG_DARK} rounded-xl border-2 ${BORDER_GOLD} hover:bg-zinc-800 transition-colors shadow-sm`}
                       >
                         <Edit2 className="w-5 h-5 text-blue-500" />
                       </button>
@@ -734,7 +735,7 @@ export default function OrdinlampoAdmin() {
                   <h2 className={`text-3xl font-bold ${TEXT_PRIMARY}`}>Storico Ordini</h2>
                   <button
                     onClick={loadOrders}
-                    className="text-blue-400 hover:bg-slate-700 px-6 py-3 rounded-xl font-bold transition-colors border-2 border-blue-500 shadow-md"
+                    className="text-blue-400 hover:bg-zinc-800 px-6 py-3 rounded-xl font-bold transition-colors border-2 border-blue-500 shadow-md"
                   >
                     🔄 Aggiorna Lista
                   </button>
@@ -758,7 +759,7 @@ export default function OrdinlampoAdmin() {
                         key={order.id}
                         className={`${BG_CARD_HOVER} rounded-2xl shadow-lg border-2 ${BORDER_GOLD} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
                       >
-                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-700/50">
+                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-zinc-800/50">
                           <div className="flex items-center gap-4 w-full md:w-auto">
                             <div
                               className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
@@ -797,7 +798,7 @@ export default function OrdinlampoAdmin() {
                             
                             <button
                               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                              className="bg-slate-600 text-gray-200 p-4 rounded-xl hover:bg-slate-500 transition-colors shadow-md"
+                              className="bg-zinc-700 text-gray-200 p-4 rounded-xl hover:bg-zinc-600 transition-colors shadow-md"
                             >
                               {expandedOrderId === order.id ? (
                                 <ChevronUp className="w-6 h-6" />
