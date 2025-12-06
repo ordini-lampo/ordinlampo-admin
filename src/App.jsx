@@ -4,7 +4,7 @@ import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } f
 
 // ============================================
 // 💎 ADMIN PANEL ORDINLAMPO - MONO GRIGIO v5.0 FINALE
-// Design: 1 SOLO Grigio #6b6a6a + Bordi Blu #608beb Sottili
+// Design: 1 SOLO Grigio #212121 + Bordi Blu #608beb Sottili
 // Request: Paolo Pizzo - "Un'unica tonalità grigio"
 // ============================================
 
@@ -12,8 +12,8 @@ const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
 
-// 🎨 PALETTE FINALE (Paolo's Spec)
-const BG_TUTTO = 'bg-[#6b6a6a]'; // UN SOLO GRIGIO (pagina, card, box, input, hover - TUTTO!)
+// 🎨 PALETTE FINALE (Paolo's Spec - Claude.ai Style)
+const BG_TUTTO = 'bg-[#212121]'; // UN SOLO GRIGIO scuro (stile Claude.ai sidebar!)
 const TEXT_PRIMARY = 'text-gray-50'; // #F9FAFB - Testo principale
 const TEXT_SECONDARY = 'text-gray-400'; // #9CA3AF - Testo secondario
 const BORDER_BLU = 'border-[#608beb]'; // Bordi blu sottili (1px)
@@ -424,7 +424,7 @@ export default function OrdinlampoAdmin() {
 
         {/* Tabs */}
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
-          <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#6b6a6a]">
+          <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#212121]">
             {[
               { id: 'locations', label: 'Località', icon: MapPin },
               { id: 'prices', label: 'Prezzi', icon: DollarSign },
@@ -441,7 +441,7 @@ export default function OrdinlampoAdmin() {
                 className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-[#608beb]/20 last:border-r-0 ${
                   activeTab === tab.id 
                     ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
-                    : `${TEXT_SECONDARY} hover:bg-[#6b6a6a]`
+                    : `${TEXT_SECONDARY} hover:bg-[#212121]`
                 }`}
               >
                 <tab.icon className="w-5 h-5" />
@@ -499,13 +499,13 @@ export default function OrdinlampoAdmin() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleLocationActive(loc.id)}
-                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-[#6b6a6a] transition-colors shadow-sm`}
+                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-[#212121] transition-colors shadow-sm`}
                       >
                         {loc.active ? <Eye className="w-5 h-5 text-green-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
                       </button>
                       <button
                         onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)}
-                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-[#6b6a6a] transition-colors shadow-sm`}
+                        className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-[#212121] transition-colors shadow-sm`}
                       >
                         <Edit2 className="w-5 h-5 text-blue-500" />
                       </button>
@@ -732,7 +732,7 @@ export default function OrdinlampoAdmin() {
                   <h2 className={`text-3xl font-bold ${TEXT_PRIMARY}`}>Storico Ordini</h2>
                   <button
                     onClick={loadOrders}
-                    className="text-blue-400 hover:bg-[#6b6a6a] px-6 py-3 rounded-xl font-bold transition-colors border border-[#608beb] shadow-md"
+                    className="text-blue-400 hover:bg-[#212121] px-6 py-3 rounded-xl font-bold transition-colors border border-[#608beb] shadow-md"
                   >
                     🔄 Aggiorna Lista
                   </button>
@@ -756,7 +756,7 @@ export default function OrdinlampoAdmin() {
                         key={order.id}
                         className={`${BG_TUTTO} rounded-2xl shadow-lg border ${BORDER_BLU} overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
                       >
-                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-[#6b6a6a]">
+                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-[#212121]">
                           <div className="flex items-center gap-4 w-full md:w-auto">
                             <div
                               className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
@@ -795,7 +795,7 @@ export default function OrdinlampoAdmin() {
                             
                             <button
                               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                              className="bg-[#6b6a6a] text-gray-200 p-4 rounded-xl hover:bg-[#6b6a6a] transition-colors shadow-md"
+                              className="bg-[#212121] text-gray-200 p-4 rounded-xl hover:bg-[#212121] transition-colors shadow-md"
                             >
                               {expandedOrderId === order.id ? (
                                 <ChevronUp className="w-6 h-6" />
