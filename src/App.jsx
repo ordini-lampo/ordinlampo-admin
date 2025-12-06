@@ -3,24 +3,37 @@ import { Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, Sett
 import { supabase, getRestaurantConfig, saveRestaurantConfig, testConnection } from './supabaseClient';
 
 // ============================================
-// 🔐 ADMIN PANEL ORDINLAMPO - SUPER-IBRIDO
-// Versione Finale: Gemini UI + Claude Stability
+// 💎 ADMIN PANEL ORDINLAMPO - STEALTH FORTUNE EDITION (v3.0)
+// Design: Premium, Minimal, Caldo (Feng Shui Colors)
 // ============================================
 
 const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
-
-const STRIPE_PRICES = {
-  pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx',
-  multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7'
-};
-
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
+const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
+
+// 🎨 PALETTE COLORI (Stealth Fortune)
+// Caldi, accoglienti, portafortuna ma non invadenti
+const BG_IVORY = 'bg-[#FFFBF0]'; // Card background (Avorio Perla)
+const BG_CREAM = 'bg-[#FEF6E4]'; // App background (Crema Caldo)
+
+// ============================================
+// 🧧 ICONE SPECIALI (Solo accenti significativi)
+// ============================================
+const Icons = {
+  RedEnvelope: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 120" fill="currentColor">
+      <rect x="15" y="30" width="70" height="85" rx="4" />
+      <path d="M15 30 L50 60 L85 30" fill="#B91C1C" />
+      <circle cx="50" cy="70" r="15" fill="#F59E0B" />
+      <text x="50" y="78" fontSize="16" fill="#DC2626" textAnchor="middle" fontWeight="bold">福</text>
+    </svg>
+  )
+};
 
 export default function OrdinlampoAdmin() {
   // ============================================
-  // STATE
+  // STATE MANAGEMENT
   // ============================================
-  
   const [locations, setLocations] = useState([
     { id: 'sanremo', name: 'Sanremo', fee: 3.50, estimatedTime: '15-20 min', active: true },
     { id: 'poggio', name: 'Poggio', fee: 5.00, estimatedTime: '20-25 min', active: true },
@@ -49,7 +62,7 @@ export default function OrdinlampoAdmin() {
   const [connectionStatus, setConnectionStatus] = useState('checking');
   const [loading, setLoading] = useState(true);
   
-  // Ordini & Notifiche Piano B
+  // Ordini & Notifiche
   const [newOrders, setNewOrders] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
@@ -87,9 +100,7 @@ export default function OrdinlampoAdmin() {
       gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (error) {
-      console.error('Errore suono:', error);
-    }
+    } catch (error) { console.error('Errore suono:', error); }
   };
 
   const loadOrders = async () => {
@@ -101,34 +112,24 @@ export default function OrdinlampoAdmin() {
         .eq('restaurant_id', RESTAURANT_ID)
         .order('created_at', { ascending: false })
         .limit(50);
-      
       if (error) throw error;
       if (data) setOrders(data);
-    } catch (error) {
-      console.error('Errore caricamento ordini:', error);
-    }
+    } catch (error) { console.error('Errore ordini:', error); }
     setLoadingOrders(false);
+  };
+
+  const updateGeneric = (setter, id, field, value) => {
+    setter(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+    showNotification();
   };
 
   const addLocation = () => {
     if (newLocation.name && newLocation.fee && newLocation.estimatedTime) {
       const id = newLocation.name.toLowerCase().replace(/\s+/g, '-');
-      setLocations([...locations, {
-        id,
-        name: newLocation.name,
-        fee: parseFloat(newLocation.fee),
-        estimatedTime: newLocation.estimatedTime,
-        active: true
-      }]);
+      setLocations([...locations, { id, name: newLocation.name, fee: parseFloat(newLocation.fee), estimatedTime: newLocation.estimatedTime, active: true }]);
       setNewLocation({ name: '', fee: '', estimatedTime: '' });
       showNotification();
     }
-  };
-
-  const updateLocation = (id, updates) => {
-    setLocations(locations.map(loc => loc.id === id ? { ...loc, ...updates } : loc));
-    setEditingLocation(null);
-    showNotification();
   };
 
   const deleteLocation = (id) => {
@@ -159,49 +160,26 @@ export default function OrdinlampoAdmin() {
       const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/create-checkout-session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId,
-          restaurantId: RESTAURANT_ID,
-          returnUrl: window.location.origin
-        })
+        body: JSON.stringify({ priceId, restaurantId: RESTAURANT_ID, returnUrl: window.location.origin })
       });
       const data = await response.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        alert('Errore creazione pagamento.');
-      }
-    } catch (error) {
-      console.error('Errore checkout:', error);
-      alert('Errore connessione.');
-    }
+      if (data.url) window.location.href = data.url;
+      else alert('Errore creazione pagamento.');
+    } catch (error) { alert('Errore connessione.'); }
     setCheckoutLoading(false);
   };
 
   const saveAllConfigurations = async () => {
     setLoading(true);
-    
     const config = {
-      delivery_locations: locations,
-      poke_sizes: pokeSizes,
-      extra_prices: extraPrices,
-      floor_delivery: floorDelivery,
-      rider_tip: riderTip,
-      whatsapp_number: whatsappNumber,
-      restaurant_name: restaurantName,
-      delivery_fee: deliveryFee,
-      show_rider_compensation: showRiderCompensation,
-      rider_compensation_amount: riderCompensationAmount,
-      last_updated: new Date().toISOString()
+      delivery_locations: locations, poke_sizes: pokeSizes, extra_prices: extraPrices,
+      floor_delivery: floorDelivery, rider_tip: riderTip, whatsapp_number: whatsappNumber,
+      restaurant_name: restaurantName, delivery_fee: deliveryFee, show_rider_compensation: showRiderCompensation,
+      rider_compensation_amount: riderCompensationAmount, last_updated: new Date().toISOString()
     };
-
     const result = await saveRestaurantConfig(RESTAURANT_ID, config);
-    
-    if (result) {
-      showNotification();
-    } else {
-      alert('Errore nel salvataggio.');
-    }
+    if (result) showNotification();
+    else alert('Errore nel salvataggio.');
     setLoading(false);
   };
 
@@ -210,75 +188,52 @@ export default function OrdinlampoAdmin() {
     setTimeout(() => setShowSaveNotification(false), 3000);
   };
 
-  const getStatusBadge = () => {
-    if (planId === 'pro' && subscriptionStatus === 'active') {
-      return (
-        <span className="px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r from-yellow-400 to-orange-500 text-white flex items-center gap-1">
-          <Star className="w-4 h-4" /> PRO
-        </span>
-      );
-    }
-    return <span className="px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-800">Trial</span>;
-  };
-
   // ============================================
-  // LIFECYCLE
+  // EFFECTS
   // ============================================
 
   useEffect(() => {
     const loadConfig = async () => {
       setLoading(true);
-      const isConnected = await testConnection();
-      setConnectionStatus(isConnected ? 'connected' : 'error');
-      
-      if (!isConnected) {
-        alert('Errore connessione Supabase.');
-        setLoading(false);
-        return;
-      }
-
-      // Load delivery toggle
       try {
-        const { data: restaurantData, error } = await supabase
+        const isConnected = await testConnection();
+        setConnectionStatus(isConnected ? 'connected' : 'error');
+        
+        if (!isConnected) {
+          alert('Errore connessione Supabase.');
+          return;
+        }
+
+        // Load Delivery Toggle
+        const { data: rData, error: rError } = await supabase
           .from('restaurants')
           .select('delivery_enabled')
           .eq('id', RESTAURANT_ID)
           .single();
-        
-        if (restaurantData && !error) {
-          setDeliveryEnabled(restaurantData.delivery_enabled ?? true);
-        }
-      } catch (err) {
-        console.error('Errore delivery_enabled:', err);
-        setDeliveryEnabled(true);
-      }
+        if (rData && !rError) setDeliveryEnabled(rData.delivery_enabled ?? true);
 
-      // Load config
-      const config = await getRestaurantConfig(RESTAURANT_ID);
-      if (config) {
-        if (config.subscription_status) setSubscriptionStatus(config.subscription_status);
-        if (config.plan_id) setPlanId(config.plan_id);
-        if (config.current_period_end) setCurrentPeriodEnd(config.current_period_end);
-        
-        if (config.delivery_fee !== undefined) setDeliveryFee(config.delivery_fee);
-        if (config.show_rider_compensation !== undefined) setShowRiderCompensation(config.show_rider_compensation);
-        if (config.rider_compensation_amount !== undefined) setRiderCompensationAmount(config.rider_compensation_amount);
-        if (config.allow_delivery_fee_edit !== undefined) setAllowDeliveryFeeEdit(config.allow_delivery_fee_edit);
-        if (config.allow_rider_compensation_display !== undefined) setAllowRiderCompensationDisplay(config.allow_rider_compensation_display);
-        if (config.force_rider_compensation !== undefined) setForceRiderCompensation(config.force_rider_compensation);
-        
-        if (config.settings) {
-          const s = config.settings;
-          if (s.delivery_locations) setLocations(s.delivery_locations);
-          if (s.poke_sizes) setPokeSizes(s.poke_sizes);
-          if (s.extra_prices) setExtraPrices(s.extra_prices);
-          if (s.floor_delivery) setFloorDelivery(s.floor_delivery);
-          if (s.rider_tip) setRiderTip(s.rider_tip);
-          if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
-          if (s.restaurant_name) setRestaurantName(s.restaurant_name);
+        // Load Settings
+        const config = await getRestaurantConfig(RESTAURANT_ID);
+        if (config) {
+          if (config.subscription_status) setSubscriptionStatus(config.subscription_status);
+          if (config.plan_id) setPlanId(config.plan_id);
+          if (config.current_period_end) setCurrentPeriodEnd(config.current_period_end);
+          if (config.settings) {
+            const s = config.settings;
+            if (s.delivery_locations) setLocations(s.delivery_locations);
+            if (s.poke_sizes) setPokeSizes(s.poke_sizes);
+            if (s.extra_prices) setExtraPrices(s.extra_prices);
+            if (s.floor_delivery) setFloorDelivery(s.floor_delivery);
+            if (s.rider_tip) setRiderTip(s.rider_tip);
+            if (s.whatsapp_number) setWhatsappNumber(s.whatsapp_number);
+            if (s.restaurant_name) setRestaurantName(s.restaurant_name);
+          }
         }
+      } catch (e) {
+        console.error("Init error:", e);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -287,16 +242,9 @@ export default function OrdinlampoAdmin() {
       if (urlParams.get('canceled')) alert('Pagamento annullato.');
     }
 
-    // Realtime subscription
-    const channel = supabase
-      .channel('orders-realtime')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'orders',
-        filter: `restaurant_id=eq.${RESTAURANT_ID}`
-      }, (payload) => {
-        console.log('🔔 NUOVO ORDINE!', payload.new);
+    const channel = supabase.channel('orders-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders', filter: `restaurant_id=eq.${RESTAURANT_ID}` }, 
+      (payload) => {
         setNewOrders(prev => [payload.new, ...prev]);
         setUnreadCount(prev => prev + 1);
         setShowNewOrderAlert(true);
@@ -309,11 +257,19 @@ export default function OrdinlampoAdmin() {
 
     loadOrders();
     loadConfig();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const getStatusBadge = () => {
+    if (planId === 'pro' && subscriptionStatus === 'active') {
+      return (
+        <span className="px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-yellow-500 to-orange-600 text-white flex items-center gap-1 shadow-lg shadow-orange-500/30">
+          <Star className="w-4 h-4" /> PRO
+        </span>
+      );
+    }
+    return <span className="px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg">Trial</span>;
+  };
 
   // ============================================
   // RENDER
@@ -321,30 +277,30 @@ export default function OrdinlampoAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className={`min-h-screen ${BG_CREAM} flex items-center justify-center`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Caricamento configurazioni...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-700 font-medium">Caricamento...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className={`min-h-screen ${BG_CREAM} py-8 px-4 relative overflow-hidden font-sans`}>
+      
+      <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6 border border-gray-100">
+        <div className={`bg-gradient-to-br from-[#FFFBF0] to-[#FEF6E4] rounded-2xl shadow-lg p-8 mb-8 border-2 border-yellow-500/30`}>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-3xl font-bold text-gray-800">⚙️ Admin Panel</h1>
+                <h1 className="text-3xl font-bold text-gray-900">⚙️ Admin Panel</h1>
                 {getStatusBadge()}
                 
-                {/* Badge Ordini Non Letti */}
                 {unreadCount > 0 && (
-                  <span className="relative inline-flex items-center px-4 py-2 rounded-full bg-red-600 text-white font-bold animate-pulse">
+                  <span className="relative inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white font-bold shadow-lg shadow-red-500/40 animate-pulse">
                     <span className="absolute -top-1 -right-1 flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -353,10 +309,9 @@ export default function OrdinlampoAdmin() {
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 mb-2">Gestisci le configurazioni del sistema</p>
               <div className="flex items-center gap-2">
                 <span className={`w-3 h-3 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-gray-600 font-medium">
                   {connectionStatus === 'connected' ? 'Database Connesso' : 'Errore Connessione'}
                 </span>
               </div>
@@ -364,7 +319,7 @@ export default function OrdinlampoAdmin() {
             <button
               onClick={saveAllConfigurations}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-2 shadow-xl shadow-green-500/40 hover:shadow-2xl hover:scale-105 transition-all disabled:opacity-50 border-2 border-green-400/30"
             >
               <Save className="w-5 h-5" />
               <span>Salva Modifiche</span>
@@ -372,21 +327,24 @@ export default function OrdinlampoAdmin() {
           </div>
         </div>
 
-        {/* Notifica Salvataggio */}
+        {/* Notifica Salvataggio con Busta Rossa (UNICO SIMBOLO RIMASTO) */}
         {showSaveNotification && (
-          <div className="fixed top-6 right-6 bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50">
-            <Save className="w-6 h-6" />
-            <span className="font-bold text-lg">Salvato con successo!</span>
+          <div className="fixed top-8 right-8 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border-2 border-yellow-500 animate-bounce-subtle">
+            <Icons.RedEnvelope className="w-10 h-10" />
+            <div>
+              <p className="font-bold text-lg">Salvato con successo!</p>
+              <p className="text-sm text-red-100">好运 (Buona Fortuna)</p>
+            </div>
           </div>
         )}
 
-        {/* Alert Nuovo Ordine - UI GEMINI + Stabilità Claude */}
+        {/* Alert Nuovo Ordine */}
         {showNewOrderAlert && newOrders.length > 0 && (
-          <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 animate-bounce w-full max-w-lg px-4">
-            <div className="bg-red-600 text-white p-6 rounded-2xl shadow-2xl border-4 border-white ring-4 ring-red-300">
+          <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-lg px-4">
+            <div className="bg-gradient-to-br from-red-600 to-red-800 text-white p-8 rounded-3xl shadow-2xl border-4 border-yellow-500 ring-4 ring-red-300 animate-bounce-subtle">
               <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-4xl">🔔</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl">🔔</span>
                   <div>
                     <h3 className="text-2xl font-black uppercase tracking-wider">Nuovo Ordine!</h3>
                     <p className="text-xl font-medium opacity-90">
@@ -402,11 +360,10 @@ export default function OrdinlampoAdmin() {
                 </button>
               </div>
               
-              {/* 2 Pulsanti: CHIAMA + VISUALIZZA (UI Gemini) */}
               <div className="grid grid-cols-2 gap-3 mt-4">
                 <a
                   href={`tel:${newOrders[0]?.customer_phone || ''}`}
-                  className="bg-white text-red-600 py-3 rounded-xl font-black text-center flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors shadow-lg"
+                  className="bg-white text-red-600 py-4 rounded-xl font-black text-center flex items-center justify-center gap-2 hover:bg-yellow-50 transition-colors shadow-lg"
                 >
                   <Phone className="w-6 h-6" />
                   CHIAMA ORA
@@ -416,7 +373,7 @@ export default function OrdinlampoAdmin() {
                     setActiveTab('orders');
                     setShowNewOrderAlert(false);
                   }}
-                  className="bg-red-800 text-white py-3 rounded-xl font-bold border border-red-400 hover:bg-red-900 transition-colors"
+                  className="bg-red-900 text-white py-4 rounded-xl font-bold border-2 border-yellow-500 hover:bg-red-950 transition-colors"
                 >
                   VISUALIZZA
                 </button>
@@ -426,8 +383,8 @@ export default function OrdinlampoAdmin() {
         )}
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
-          <div className="flex border-b overflow-x-auto">
+        <div className={`bg-gradient-to-br from-[#FFFBF0] to-[#FEF6E4] rounded-2xl shadow-lg border-2 border-yellow-500/30 mb-8 overflow-hidden`}>
+          <div className="flex border-b-2 border-yellow-500/20 overflow-x-auto bg-gradient-to-r from-amber-50 to-orange-50">
             {[
               { id: 'locations', label: 'Località', icon: MapPin },
               { id: 'prices', label: 'Prezzi', icon: DollarSign },
@@ -441,14 +398,16 @@ export default function OrdinlampoAdmin() {
                   setActiveTab(tab.id);
                   if (tab.id === 'orders') setUnreadCount(0);
                 }}
-                className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all ${
-                  activeTab === tab.id ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'
+                className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-yellow-500/20 last:border-r-0 ${
+                  activeTab === tab.id 
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
+                    : 'text-gray-700 hover:bg-yellow-50'
                 }`}
               >
                 <tab.icon className="w-5 h-5" />
                 <span>{tab.label}</span>
                 {tab.id === 'orders' && unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                  <span className="bg-yellow-500 text-red-900 text-xs px-2 py-1 rounded-full font-black shadow-inner">
                     {unreadCount}
                   </span>
                 )}
@@ -456,63 +415,63 @@ export default function OrdinlampoAdmin() {
             ))}
           </div>
 
-          <div className="p-6">
+          <div className="p-8">
             
             {/* TAB LOCALITÀ */}
             {activeTab === 'locations' && (
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Gestione Zone Consegna</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Zone Consegna</h2>
                 {locations.map(loc => (
                   <div
                     key={loc.id}
-                    className={`bg-gray-50 p-4 rounded-xl flex items-center justify-between border ${
-                      !loc.active ? 'opacity-60 border-dashed' : 'border-gray-200'
+                    className={`bg-gradient-to-r from-[#FFFBF0] to-white p-6 rounded-2xl flex items-center justify-between border-2 shadow-md ${
+                      !loc.active ? 'opacity-60 border-dashed border-gray-300' : 'border-yellow-500/40 shadow-yellow-500/20'
                     }`}
                   >
                     <div className="flex-1">
                       {editingLocation === loc.id ? (
                         <div className="flex gap-2">
                           <input
-                            className="border p-2 rounded w-1/3"
+                            className="border-2 border-yellow-500/50 p-3 rounded-xl w-1/3 font-medium"
                             defaultValue={loc.name}
-                            onBlur={(e) => updateLocation(loc.id, { name: e.target.value })}
+                            onBlur={(e) => updateGeneric(setLocations, loc.id, 'name', e.target.value)}
                           />
                           <input
-                            className="border p-2 rounded w-20"
+                            className="border-2 border-yellow-500/50 p-3 rounded-xl w-24 font-bold text-center"
                             type="number"
                             step="0.50"
                             defaultValue={loc.fee}
-                            onBlur={(e) => updateLocation(loc.id, { fee: parseFloat(e.target.value) })}
+                            onBlur={(e) => updateGeneric(setLocations, loc.id, 'fee', parseFloat(e.target.value))}
                           />
                           <input
-                            className="border p-2 rounded w-1/3"
+                            className="border-2 border-yellow-500/50 p-3 rounded-xl w-1/3 font-medium"
                             defaultValue={loc.estimatedTime}
-                            onBlur={(e) => updateLocation(loc.id, { estimatedTime: e.target.value })}
+                            onBlur={(e) => updateGeneric(setLocations, loc.id, 'estimatedTime', e.target.value)}
                           />
                         </div>
                       ) : (
                         <div>
-                          <h3 className="font-bold text-lg">{loc.name}</h3>
-                          <p className="text-gray-500">Tariffa: €{loc.fee.toFixed(2)} • Tempo: {loc.estimatedTime}</p>
+                          <h3 className="font-bold text-xl text-gray-900">{loc.name}</h3>
+                          <p className="text-gray-700 font-medium">Tariffa: €{loc.fee.toFixed(2)} • Tempo: {loc.estimatedTime}</p>
                         </div>
                       )}
                     </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => toggleLocationActive(loc.id)}
-                        className="p-2 bg-white rounded-lg border hover:bg-gray-50 transition-colors"
+                        className="p-3 bg-white rounded-xl border-2 border-yellow-500/50 hover:bg-yellow-50 transition-colors shadow-sm"
                       >
                         {loc.active ? <Eye className="w-5 h-5 text-green-600" /> : <EyeOff className="w-5 h-5 text-gray-400" />}
                       </button>
                       <button
                         onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)}
-                        className="p-2 bg-white rounded-lg border hover:bg-gray-50 transition-colors"
+                        className="p-3 bg-white rounded-xl border-2 border-yellow-500/50 hover:bg-yellow-50 transition-colors shadow-sm"
                       >
                         <Edit2 className="w-5 h-5 text-blue-600" />
                       </button>
                       <button
                         onClick={() => deleteLocation(loc.id)}
-                        className="p-2 bg-white rounded-lg border hover:bg-gray-50 transition-colors"
+                        className="p-3 bg-white rounded-xl border-2 border-yellow-500/50 hover:bg-red-50 transition-colors shadow-sm"
                       >
                         <Trash2 className="w-5 h-5 text-red-600" />
                       </button>
@@ -520,20 +479,20 @@ export default function OrdinlampoAdmin() {
                   </div>
                 ))}
                 
-                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mt-4">
-                  <h3 className="font-bold text-blue-800 mb-3 flex items-center gap-2">
-                    <Plus className="w-5 h-5" />
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-2xl border-2 border-blue-300 mt-6">
+                  <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
+                    <Plus className="w-6 h-6" />
                     Nuova Zona
                   </h3>
-                  <div className="flex gap-2">
+                  <div className="flex gap-3">
                     <input
-                      className="border p-2 rounded flex-1"
+                      className="border-2 border-blue-300 p-3 rounded-xl flex-1 font-medium"
                       placeholder="Nome zona"
                       value={newLocation.name}
                       onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
                     />
                     <input
-                      className="border p-2 rounded w-24"
+                      className="border-2 border-blue-300 p-3 rounded-xl w-28 font-bold text-center"
                       type="number"
                       step="0.50"
                       placeholder="€"
@@ -541,14 +500,14 @@ export default function OrdinlampoAdmin() {
                       onChange={(e) => setNewLocation({ ...newLocation, fee: e.target.value })}
                     />
                     <input
-                      className="border p-2 rounded w-32"
+                      className="border-2 border-blue-300 p-3 rounded-xl w-36 font-medium"
                       placeholder="20-25 min"
                       value={newLocation.estimatedTime}
                       onChange={(e) => setNewLocation({ ...newLocation, estimatedTime: e.target.value })}
                     />
                     <button
                       onClick={addLocation}
-                      className="bg-blue-600 text-white px-6 rounded font-bold hover:bg-blue-700 transition-colors"
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg"
                     >
                       AGGIUNGI
                     </button>
@@ -559,24 +518,24 @@ export default function OrdinlampoAdmin() {
 
             {/* TAB PREZZI */}
             {activeTab === 'prices' && (
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                  <h3 className="text-lg font-bold mb-4">Taglie Bowl</h3>
-                  <div className="space-y-2">
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-8 rounded-2xl border-2 border-orange-300/50 shadow-lg">
+                  <h3 className="text-xl font-bold mb-6 text-gray-900">Taglie Bowl</h3>
+                  <div className="space-y-3">
                     {pokeSizes.map(size => (
                       <div
                         key={size.id}
-                        className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm"
+                        className="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border-2 border-yellow-500/30"
                       >
-                        <span className="font-medium text-lg">
+                        <span className="font-bold text-lg text-gray-900">
                           {size.emoji} {size.name}
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-600">€</span>
+                          <span className="text-gray-700 font-medium">€</span>
                           <input
                             type="number"
                             step="0.50"
-                            className="border p-1 w-20 rounded text-center font-bold"
+                            className="border-2 border-yellow-500/50 p-2 w-24 rounded-lg text-center font-bold text-gray-900"
                             value={size.price}
                             onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
                           />
@@ -586,21 +545,21 @@ export default function OrdinlampoAdmin() {
                   </div>
                 </div>
                 
-                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                  <h3 className="text-lg font-bold mb-4">Prezzi Extra</h3>
-                  <div className="space-y-2">
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 rounded-2xl border-2 border-green-300/50 shadow-lg">
+                  <h3 className="text-xl font-bold mb-6 text-gray-900">Prezzi Extra</h3>
+                  <div className="space-y-3">
                     {Object.entries(extraPrices).map(([key, val]) => (
                       <div
                         key={key}
-                        className="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm"
+                        className="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border-2 border-yellow-500/30"
                       >
-                        <span className="capitalize font-medium">{key}</span>
+                        <span className="capitalize font-bold text-gray-900">{key}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-gray-600">€</span>
+                          <span className="text-gray-700 font-medium">€</span>
                           <input
                             type="number"
                             step="0.10"
-                            className="border p-1 w-20 rounded text-center font-bold"
+                            className="border-2 border-yellow-500/50 p-2 w-24 rounded-lg text-center font-bold text-gray-900"
                             value={val}
                             onChange={(e) => updateExtraPrice(key, e.target.value)}
                           />
@@ -614,18 +573,16 @@ export default function OrdinlampoAdmin() {
 
             {/* TAB ABBONAMENTO */}
             {activeTab === 'subscription' && (
-              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-8 rounded-2xl border border-indigo-100">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-10 rounded-3xl border-4 border-yellow-500/50 shadow-2xl">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-6">
                   <div>
-                    <p className="text-indigo-600 font-bold uppercase tracking-wider text-sm mb-1">
-                      Il tuo piano
-                    </p>
-                    <h2 className="text-4xl font-black text-gray-900 mb-2">
+                    <p className="text-indigo-700 font-bold uppercase tracking-wider text-sm mb-2">Il tuo piano</p>
+                    <h2 className="text-5xl font-black text-gray-900 mb-3">
                       {planId === 'pro' ? 'PIANO PRO 🚀' : 'PIANO BASIC'}
                     </h2>
-                    <p className="text-gray-600 flex items-center gap-2">
+                    <p className="text-gray-700 flex items-center gap-2 font-medium text-lg">
                       Stato:{' '}
-                      <span className={`font-bold ${subscriptionStatus === 'active' ? 'text-green-600' : 'text-orange-500'}`}>
+                      <span className={`font-bold ${subscriptionStatus === 'active' ? 'text-green-600' : 'text-orange-600'}`}>
                         {subscriptionStatus.toUpperCase()}
                       </span>
                     </p>
@@ -634,9 +591,9 @@ export default function OrdinlampoAdmin() {
                     <button
                       onClick={() => handleSubscribe(STRIPE_PRICES.pro)}
                       disabled={checkoutLoading}
-                      className="bg-orange-500 text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-orange-600 hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-50"
+                      className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl shadow-orange-500/50 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 border-2 border-yellow-500"
                     >
-                      <Star className="w-5 h-5 fill-current" />
+                      <Star className="w-6 h-6 fill-current" />
                       {checkoutLoading ? 'Attendere...' : 'PASSA A PRO - €39.90'}
                     </button>
                   )}
@@ -646,24 +603,24 @@ export default function OrdinlampoAdmin() {
 
             {/* TAB IMPOSTAZIONI */}
             {activeTab === 'settings' && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                  <h3 className="font-bold text-lg mb-4">Info Generali</h3>
-                  <div className="space-y-4">
+              <div className="space-y-8">
+                <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-8 rounded-2xl border-2 border-gray-300/50 shadow-lg">
+                  <h3 className="font-bold text-xl mb-6 text-gray-900">Generale</h3>
+                  <div className="space-y-5">
                     <div>
-                      <label className="block font-semibold text-gray-700 mb-2">Nome Ristorante</label>
+                      <label className="block font-bold text-gray-700 mb-2">Nome Ristorante</label>
                       <input
                         type="text"
-                        className="w-full border p-3 rounded-lg"
+                        className="w-full border-2 border-yellow-500/50 p-4 rounded-xl font-medium text-gray-900"
                         value={restaurantName}
                         onChange={(e) => setRestaurantName(e.target.value)}
                       />
                     </div>
                     <div>
-                      <label className="block font-semibold text-gray-700 mb-2">Numero WhatsApp</label>
+                      <label className="block font-bold text-gray-700 mb-2">WhatsApp</label>
                       <input
                         type="text"
-                        className="w-full border p-3 rounded-lg"
+                        className="w-full border-2 border-yellow-500/50 p-4 rounded-xl font-medium text-gray-900"
                         placeholder="393331234567"
                         value={whatsappNumber}
                         onChange={(e) => setWhatsappNumber(e.target.value)}
@@ -673,30 +630,30 @@ export default function OrdinlampoAdmin() {
                 </div>
 
                 {/* Toggle Delivery */}
-                <div className="bg-white p-6 rounded-xl border-2 border-blue-100 shadow-sm">
+                <div className="bg-white p-8 rounded-2xl border-4 border-blue-300 shadow-xl">
                   <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
-                      <h3 className="font-bold text-xl text-gray-800">Modalità Operativa</h3>
-                      <p className={`font-medium mt-1 ${deliveryEnabled ? 'text-green-600' : 'text-blue-600'}`}>
+                      <h3 className="font-bold text-2xl text-gray-900">Modalità Operativa</h3>
+                      <p className={`font-bold mt-2 text-lg ${deliveryEnabled ? 'text-green-600' : 'text-blue-600'}`}>
                         {deliveryEnabled ? '✅ DELIVERY + ASPORTO ATTIVI' : '🏪 SOLO RITIRO AL LOCALE'}
                       </p>
                     </div>
                     <button
                       onClick={async () => {
-                        const newValue = !deliveryEnabled;
-                        setDeliveryEnabled(newValue);
+                        const newVal = !deliveryEnabled;
+                        setDeliveryEnabled(newVal);
                         
                         try {
                           const { error: err1 } = await supabase
                             .from('restaurants')
-                            .update({ delivery_enabled: newValue })
+                            .update({ delivery_enabled: newVal })
                             .eq('id', RESTAURANT_ID);
                           
                           if (err1) throw err1;
                           
                           const { error: err2 } = await supabase
                             .from('restaurant_settings')
-                            .update({ enable_delivery: newValue })
+                            .update({ enable_delivery: newVal })
                             .eq('restaurant_id', RESTAURANT_ID);
                           
                           if (err2) console.warn('Settings sync:', err2);
@@ -708,13 +665,13 @@ export default function OrdinlampoAdmin() {
                           setDeliveryEnabled(!newValue);
                         }
                       }}
-                      className={`w-20 h-10 rounded-full relative transition-colors duration-300 shadow-inner ${
-                        deliveryEnabled ? 'bg-green-500' : 'bg-gray-300'
+                      className={`w-24 h-12 rounded-full relative transition-colors duration-300 shadow-lg border-2 ${
+                        deliveryEnabled ? 'bg-gradient-to-r from-green-500 to-green-600 border-green-400' : 'bg-gray-300 border-gray-400'
                       }`}
                     >
                       <div
-                        className={`w-8 h-8 bg-white rounded-full absolute top-1 shadow-md transition-all duration-300 ${
-                          deliveryEnabled ? 'left-11' : 'left-1'
+                        className={`w-10 h-10 bg-white rounded-full absolute top-1 shadow-md transition-all duration-300 border-2 border-gray-200 ${
+                          deliveryEnabled ? 'left-[52px]' : 'left-1'
                         }`}
                       ></div>
                     </button>
@@ -723,50 +680,49 @@ export default function OrdinlampoAdmin() {
               </div>
             )}
 
-            {/* TAB ORDINI - UI Gemini + Stabilità Claude */}
+            {/* TAB ORDINI */}
             {activeTab === 'orders' && (
               <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Storico Ordini</h2>
+                <div className="flex justify-between items-center mb-8">
+                  <h2 className="text-3xl font-bold text-gray-900">Storico Ordini</h2>
                   <button
                     onClick={loadOrders}
-                    className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-bold transition-colors"
+                    className="text-blue-700 hover:bg-blue-50 px-6 py-3 rounded-xl font-bold transition-colors border-2 border-blue-300 shadow-md"
                   >
                     🔄 Aggiorna Lista
                   </button>
                 </div>
                 
                 {loadingOrders ? (
-                  <div className="text-center py-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-500">Caricamento ordini...</p>
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto mb-4"></div>
+                    <p className="text-gray-700 font-medium text-lg">Caricamento ordini...</p>
                   </div>
                 ) : orders.length === 0 ? (
-                  <div className="bg-gray-50 rounded-lg p-8 text-center">
-                    <p className="text-4xl mb-4">📭</p>
-                    <p className="text-gray-600 text-lg">Nessun ordine ancora</p>
-                    <p className="text-gray-500 text-sm mt-2">Gli ordini appariranno qui quando i clienti ordinano</p>
+                  <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-12 text-center border-2 border-gray-300 shadow-inner">
+                    <p className="text-6xl mb-4">📭</p>
+                    <p className="text-gray-700 text-xl font-bold">Nessun ordine ancora</p>
+                    <p className="text-gray-600 text-sm mt-2">Gli ordini appariranno qui quando i clienti ordinano</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {orders.map(order => (
                       <div
                         key={order.id}
-                        className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                        className={`${BG_IVORY} rounded-2xl shadow-lg border-2 border-yellow-500/30 overflow-hidden hover:shadow-2xl hover:scale-[1.01] transition-all relative`}
                       >
-                        {/* Header Ordine */}
-                        <div className="p-4 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50/50">
+                        <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4 bg-gradient-to-r from-amber-50 to-orange-50">
                           <div className="flex items-center gap-4 w-full md:w-auto">
                             <div
-                              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white ${
-                                order.order_type === 'delivery' ? 'bg-orange-500' : 'bg-blue-500'
+                              className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
+                                order.order_type === 'delivery' ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'
                               }`}
                             >
                               {order.order_type === 'delivery' ? '🛵' : '🥡'}
                             </div>
                             <div>
-                              <h3 className="font-bold text-lg">#{order.order_number || order.id?.slice(0, 8)}</h3>
-                              <p className="text-sm text-gray-500">
+                              <h3 className="font-black text-xl text-gray-900">#{order.order_number || order.id?.slice(0, 8)}</h3>
+                              <p className="text-sm text-gray-600 font-medium">
                                 {new Date(order.created_at).toLocaleString('it-IT')}
                               </p>
                             </div>
@@ -774,78 +730,75 @@ export default function OrdinlampoAdmin() {
                           
                           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
                             <div className="text-right mr-2">
-                              <p className="font-bold text-lg text-green-600">
+                              <p className="font-black text-2xl text-green-600">
                                 €{(order.total_amount || order.total || 0).toFixed(2)}
                               </p>
-                              <p className="text-xs text-gray-500 capitalize">
+                              <p className="text-xs text-gray-600 capitalize font-medium">
                                 {order.payment_method || 'N/A'}
                               </p>
                             </div>
                             
-                            {/* Pulsante CHIAMA - UI Gemini */}
                             {order.customer_phone && (
                               <a
                                 href={`tel:${order.customer_phone}`}
-                                className="bg-green-100 text-green-700 p-3 rounded-lg hover:bg-green-200 transition-colors"
+                                className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl"
                                 title="Chiama Cliente"
                               >
-                                <Phone className="w-5 h-5" />
+                                <Phone className="w-6 h-6" />
                               </a>
                             )}
                             
                             <button
                               onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                              className="bg-gray-100 text-gray-600 p-3 rounded-lg hover:bg-gray-200 transition-colors"
+                              className="bg-gray-100 text-gray-700 p-4 rounded-xl hover:bg-gray-200 transition-colors shadow-md"
                             >
                               {expandedOrderId === order.id ? (
-                                <ChevronUp className="w-5 h-5" />
+                                <ChevronUp className="w-6 h-6" />
                               ) : (
-                                <ChevronDown className="w-5 h-5" />
+                                <ChevronDown className="w-6 h-6" />
                               )}
                             </button>
                           </div>
                         </div>
 
-                        {/* Dettagli Espandibili - UI Gemini + Stabilità Claude */}
                         {expandedOrderId === order.id && (
-                          <div className="p-4 border-t border-gray-100 bg-white">
-                            <div className="grid md:grid-cols-2 gap-6">
+                          <div className="p-6 border-t-2 border-yellow-500/20 bg-gradient-to-br from-white to-amber-50">
+                            <div className="grid md:grid-cols-2 gap-8">
                               <div>
-                                <h4 className="font-bold text-gray-700 mb-2 uppercase text-xs tracking-wider">
+                                <h4 className="font-bold text-gray-800 mb-3 uppercase text-xs tracking-wider">
                                   Dati Cliente
                                 </h4>
-                                <p className="font-semibold text-lg">{order.customer_name || 'N/A'}</p>
-                                <p className="text-gray-600 flex items-center gap-2">
+                                <p className="font-bold text-xl text-gray-900">{order.customer_name || 'N/A'}</p>
+                                <p className="text-gray-700 flex items-center gap-2 font-medium">
                                   <Phone className="w-4 h-4" />
                                   {order.customer_phone || 'N/A'}
                                 </p>
                                 {order.delivery_address && (
-                                  <p className="text-gray-600 mt-1">
+                                  <p className="text-gray-700 mt-2 font-medium">
                                     📍 {order.delivery_address} {order.customer_city || ''}
                                   </p>
                                 )}
                                 {order.customer_notes_order && (
-                                  <div className="mt-3 bg-yellow-50 p-3 rounded text-sm text-yellow-800 border border-yellow-100">
+                                  <div className="mt-4 bg-yellow-50 p-4 rounded-xl text-sm text-yellow-900 border-2 border-yellow-300 font-medium">
                                     📝 Note: {order.customer_notes_order}
                                   </div>
                                 )}
                               </div>
                               
                               <div>
-                                <h4 className="font-bold text-gray-700 mb-2 uppercase text-xs tracking-wider">
+                                <h4 className="font-bold text-gray-800 mb-3 uppercase text-xs tracking-wider">
                                   Riepilogo Ordine
                                 </h4>
                                 <div className="space-y-2 text-sm">
-                                  {/* Safe access con fallback - Stabilità Claude */}
                                   {order.order_details ? (
-                                    <div className="bg-blue-50 rounded p-3">
-                                      <pre className="whitespace-pre-wrap text-xs overflow-x-auto">
+                                    <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+                                      <pre className="whitespace-pre-wrap text-xs overflow-x-auto text-gray-800 font-mono">
                                         {JSON.stringify(order.order_details, null, 2)}
                                       </pre>
                                     </div>
                                   ) : (
-                                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                                      <span>TOTALE</span>
+                                    <div className="flex justify-between font-black text-2xl pt-3 border-t-2 border-gray-300">
+                                      <span className="text-gray-900">TOTALE</span>
                                       <span className="text-green-600">€{(order.total_amount || order.total || 0).toFixed(2)}</span>
                                     </div>
                                   )}
@@ -864,6 +817,23 @@ export default function OrdinlampoAdmin() {
           </div>
         </div>
       </div>
+
+      {/* Animation Styles - Ridotte al minimo (solo per la busta e il bounce) */}
+      <style>{`
+        @keyframes bounce-subtle {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-2px);
+          }
+        }
+
+        .animate-bounce-subtle {
+          animation: bounce-subtle 2s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 }
+
