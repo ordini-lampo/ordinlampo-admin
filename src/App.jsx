@@ -54,6 +54,12 @@ export default function OrdinlampoAdmin() {
   const [showSaveNotification, setShowSaveNotification] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('checking');
   const [loading, setLoading] = useState(true);
+  // 🔔 NOTIFICHE REAL-TIME - PIANO B
+const [newOrders, setNewOrders] = useState([]);
+const [unreadCount, setUnreadCount] = useState(0);
+const [showNewOrderAlert, setShowNewOrderAlert] = useState(false);
+const [orders, setOrders] = useState([]);
+const [loadingOrders, setLoadingOrders] = useState(false);
 
   // 💳 NUOVI STATI PER ABBONAMENTO
   const [subscriptionStatus, setSubscriptionStatus] = useState('trial');
@@ -71,6 +77,83 @@ export default function OrdinlampoAdmin() {
   const [deliveryEnabled, setDeliveryEnabled] = useState(true);
 
   // Funzioni per gestire le località
+  // ============================================
+// 🔔 FUNZIONI NOTIFICHE ORDINI
+// ============================================
+
+// 🔊 SUONO NOTIFICA
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+  } catch (error) {
+    // 📋 CARICA ORDINI
+const loadOrders = async () => {
+  setLoadingOrders(true);
+  
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('restaurant_id', RESTAURANT_ID)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) throw error;
+    if (data) setOrders(data);
+  } catch (error) {
+    console.error('Errore caricamento ordini:', error);
+  }
+  
+  setLoadingOrders(false);
+};
+
+// ============================================
+// FINE FUNZIONI NOTIFICHE
+// ============================================
+
+  const addLocation = () => {
+    console.error('Errore suono:', error);
+  }
+};
+
+// 📋 CARICA ORDINI
+const loadOrders = async () => {
+  setLoadingOrders(true);
+  
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('restaurant_id', RESTAURANT_ID)
+      .order('created_at', { ascending: false })
+      .limit(50);
+    
+    if (error) throw error;
+    if (data) setOrders(data);
+  } catch (error) {
+    console.error('Errore caricamento ordini:', error);
+  }
+  
+  setLoadingOrders(false);
+};
+
+// ============================================
+// FINE FUNZIONI NOTIFICHE
+// ============================================
   const addLocation = () => {
     if (newLocation.name && newLocation.fee && newLocation.estimatedTime) {
       const id = newLocation.name.toLowerCase().replace(/\s+/g, '-');
@@ -307,7 +390,51 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
       window.history.replaceState({}, '', window.location.pathname);
     }
 
+// 🔔 SUPABASE REALTIME - Ascolta nuovi ordini
+    const channel = supabase
+      .channel('orders-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'orders',
+          filter: `restaurant_id=eq.${RESTAURANT_ID}`
+        },
+        (payload) => {
+          console.log('🔔 NUOVO ORDINE RICEVUTO!', payload.new);
+          
+          // Aggiungi a lista nuovi ordini
+          setNewOrders(prev => [payload.new, ...prev]);
+          setUnreadCount(prev => prev + 1);
+          setShowNewOrderAlert(true);
+          
+          // Riproduci suono
+          playNotificationSound();
+          
+          // Vibra tablet (se supportato)
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200, 100, 200]);
+          }
+          
+          // Ricarica lista ordini
+          loadOrders();
+          
+          // Nascondi alert dopo 15 secondi
+          setTimeout(() => setShowNewOrderAlert(false), 15000);
+        }
+      )
+      .subscribe();
+
+    // Carica ordini iniziali
+    loadOrders();
+
     loadConfig();
+    
+    // Cleanup quando componente smonta
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   // Helper per formattare la data
@@ -371,11 +498,22 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold text-gray-800">
-                  ⚙️ Admin Panel - Ordinlampo
-                </h1>
-                {getStatusBadge()}
-              </div>
+  <h1 className="text-3xl font-bold text-gray-800">
+    ⚙️ Admin Panel - Ordinlampo
+  </h1>
+  {getStatusBadge()}
+  
+  {/* 🔴 BADGE NUOVI ORDINI */}
+  {unreadCount > 0 && (
+    <span className="relative inline-flex items-center px-4 py-2 rounded-full bg-red-600 text-white font-bold animate-pulse">
+      <span className="absolute -top-1 -right-1 flex h-3 w-3">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+      </span>
+      🔔 {unreadCount} {unreadCount === 1 ? 'nuovo ordine' : 'nuovi ordini'}
+    </span>
+  )}
+</div>
               <p className="text-gray-600">Gestisci tutte le configurazioni del sistema</p>
               <div className="mt-2 flex items-center gap-2">
                 {connectionStatus === 'connected' ? (
@@ -409,6 +547,41 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
             <span>Modifiche salvate su Supabase!</span>
           </div>
         )}
+        {/* 🔴 ALERT NUOVO ORDINE */}
+{showNewOrderAlert && newOrders.length > 0 && (
+  <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
+    <div className="bg-red-600 text-white px-8 py-6 rounded-2xl shadow-2xl border-4 border-red-800">
+      <div className="flex items-center space-x-4">
+        <div className="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-red-400 opacity-75"></div>
+        <div className="relative">
+          <span className="text-5xl">🔔</span>
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold">NUOVO ORDINE!</h3>
+          <p className="text-lg">Ordine #{newOrders[0]?.order_number || 'N/A'}</p>
+          <p className="text-sm mt-1">Cliente: {newOrders[0]?.customer_name || 'N/A'}</p>
+        </div>
+        <button
+          onClick={() => {
+            setShowNewOrderAlert(false);
+            if (newOrders[0]?.customer_phone) {
+              window.location.href = `tel:${newOrders[0].customer_phone}`;
+            }
+          }}
+          className="ml-4 bg-white text-red-600 px-6 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 transition-all"
+        >
+          📞 CHIAMA ORA
+        </button>
+        <button
+          onClick={() => setShowNewOrderAlert(false)}
+          className="ml-2 text-white hover:text-gray-200 text-2xl"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-lg mb-6 overflow-hidden">
@@ -457,6 +630,26 @@ export const POKENJOY_CONFIG = ${JSON.stringify(config, null, 2)};
               <Settings className="w-5 h-5" />
               <span>Impostazioni</span>
             </button>
+            <button
+      onClick={() => {
+        setActiveTab('orders');
+        setUnreadCount(0);
+      }}
+      className={`flex-1 px-6 py-4 font-semibold flex items-center justify-center space-x-2 transition-colors ${
+        activeTab === 'orders'
+          ? 'bg-blue-600 text-white'
+          : 'bg-white text-gray-600 hover:bg-gray-50'
+      }`}
+    >
+      <span className="text-xl">📋</span>
+      <span>Ordini</span>
+      {unreadCount > 0 && (
+        <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+          {unreadCount}
+        </span>
+      )}
+    </button>
+  </div>
           </div>
 
           {/* Tab Content */}
