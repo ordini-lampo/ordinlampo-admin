@@ -12,6 +12,62 @@ const RESTAURANT_ID = '11111111-1111-1111-1111-111111111111';
 const SUPABASE_FUNCTIONS_URL = 'https://juwusmklaavhshwkfjjs.supabase.co/functions/v1';
 const STRIPE_PRICES = { pro: 'price_1SYVGw2LTzIeFZapPaXMWqzx', multi_sede: 'price_1SYVJD2LTzIeFZapYo3eewM7' };
 
+// 📊 PIANI TARIFFARI ORDINI-LAMPO (RETAIL)
+const PIANI_TARIFFARI = {
+  freedom_150: {
+    id: 'freedom_150',
+    nome: 'FREEDOM 150',
+    nomeBadge: 'FREEDOM',
+    tariffa: 1.20,
+    crediti: null, // pay-as-you-go
+    bonus: 0,
+    totale: 150, // max settimanale
+    importo: null, // variabile
+    costoPerOrdine: 1.20, // €1.20 per ordine
+    colore: 'from-gray-500 to-gray-600',
+    descrizione: 'Pay-as-you-go settimanale'
+  },
+  lampo_500: {
+    id: 'lampo_500',
+    nome: 'LAMPO 500',
+    nomeBadge: 'LAMPO',
+    tariffa: 0.98,
+    crediti: 500,
+    bonus: 0,
+    totale: 500,
+    importo: 490,
+    costoPerOrdine: 0.98, // €0.98 per ordine
+    colore: 'from-blue-500 to-blue-600',
+    descrizione: 'Piano standard prepagato'
+  },
+  max_1000: {
+    id: 'max_1000',
+    nome: 'MAX 1000',
+    nomeBadge: 'MAX',
+    tariffa: 0.90,
+    crediti: 1000,
+    bonus: 50,
+    totale: 1050,
+    importo: 900,
+    costoPerOrdine: 0.86, // €900 / 1050 ordini = €0.857
+    colore: 'from-purple-500 to-purple-600',
+    descrizione: 'Per chi spinge forte'
+  },
+  king_1500: {
+    id: 'king_1500',
+    nome: 'KING 1500',
+    nomeBadge: 'KING',
+    tariffa: 0.80,
+    crediti: 1500,
+    bonus: 100,
+    totale: 1600,
+    importo: 1200,
+    costoPerOrdine: 0.75, // €1200 / 1600 ordini = €0.75
+    colore: 'from-amber-500 to-amber-600',
+    descrizione: 'Elite retail - Miglior prezzo'
+  }
+};
+
 // 🎨 PALETTE FINALE (Paolo's Spec - Claude.ai Style)
 const BG_TUTTO = 'bg-[#212121]'; // UN SOLO GRIGIO scuro (stile Claude.ai sidebar!)
 const TEXT_PRIMARY = 'text-gray-50'; // #F9FAFB - Testo principale
@@ -101,7 +157,16 @@ export default function OrdinlampoAdmin() {
 
   // Stripe & Settings
   const [subscriptionStatus, setSubscriptionStatus] = useState('trial');
-  const [planId, setPlanId] = useState('normal');
+  const [planId, setPlanId] = useState('freedom_150'); // FREEDOM 150 di default
+  
+  // 📊 Statistiche Settimanali per Widget Contatore
+  const [weeklyStats, setWeeklyStats] = useState({
+    ordersCount: 0,
+    totalAmount: 0,
+    periodStart: null,
+    periodEnd: null,
+    loading: true
+  });
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -145,6 +210,54 @@ export default function OrdinlampoAdmin() {
       if (data) setOrders(data);
     } catch (error) { console.error('Errore ordini:', error); }
     setLoadingOrders(false);
+  };
+
+  // 📊 CARICA STATISTICHE SETTIMANALI (per Widget Contatore)
+  const loadWeeklyStats = async () => {
+    try {
+      // Calcola inizio settimana (Lunedì) e fine (Domenica)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() + diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, total, created_at')
+        .eq('restaurant_id', RESTAURANT_ID)
+        .gte('created_at', startOfWeek.toISOString())
+        .lte('created_at', endOfWeek.toISOString());
+
+      if (error) throw error;
+
+      const ordersCount = data?.length || 0;
+      const totalAmount = data?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+      
+      // Calcola fee in base al piano attivo
+      const pianoAttivo = PIANI_TARIFFARI[planId] || PIANI_TARIFFARI.freedom_150;
+      const feePerOrdine = pianoAttivo.costoPerOrdine;
+      const totaleFee = ordersCount * feePerOrdine;
+
+      setWeeklyStats({
+        ordersCount,
+        totalAmount,
+        totaleFee,
+        feePerOrdine,
+        periodStart: startOfWeek,
+        periodEnd: endOfWeek,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Errore statistiche settimanali:', error);
+      setWeeklyStats(prev => ({ ...prev, loading: false }));
+    }
   };
 
   const updateGeneric = (setter, id, field, value) => {
@@ -297,6 +410,7 @@ export default function OrdinlampoAdmin() {
 
     loadOrders();
     loadConfig();
+    loadWeeklyStats(); // Carica statistiche settimanali
     return () => { supabase.removeChannel(channel); };
   }, []);
 
@@ -644,32 +758,214 @@ export default function OrdinlampoAdmin() {
               </div>
             )}
 
-            {/* TAB ABBONAMENTO */}
+            {/* TAB ABBONAMENTO - LAYOUT 2 COLONNE */}
             {activeTab === 'subscription' && (
-              <div className="bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30 p-10 rounded-3xl border border-[#608beb] shadow-2xl">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-6">
-                  <div>
-                    <p className="text-indigo-400 font-bold uppercase tracking-wider text-sm mb-2">Il tuo piano</p>
-                    <h2 className={`text-5xl font-black ${TEXT_PRIMARY} mb-3`}>
-                      {planId === 'pro' ? 'PIANO PRO 🚀' : 'PIANO BASIC'}
-                    </h2>
-                    <p className={`${TEXT_SECONDARY} flex items-center gap-2 font-medium text-lg`}>
-                      Stato:{' '}
-                      <span className={`font-bold ${subscriptionStatus === 'active' ? 'text-green-500' : 'text-orange-500'}`}>
-                        {subscriptionStatus.toUpperCase()}
-                      </span>
-                    </p>
+              <div className="grid md:grid-cols-2 gap-8">
+                
+                {/* COLONNA SINISTRA: Tariffe Disponibili */}
+                <div className="space-y-6">
+                  <h2 className={`text-2xl font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>
+                    📋 Tariffe Disponibili
+                  </h2>
+                  
+                  {/* Lista Piani */}
+                  <div className="space-y-3">
+                    {Object.values(PIANI_TARIFFARI).map((piano) => {
+                      const isActive = planId === piano.id;
+                      return (
+                        <div
+                          key={piano.id}
+                          className={`${BG_TUTTO} p-4 rounded-xl border transition-all hover:scale-[1.01] ${
+                            isActive 
+                              ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
+                              : BORDER_BLU
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${piano.colore} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
+                                {piano.nomeBadge.charAt(0)}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h3 className={`font-bold text-lg ${TEXT_PRIMARY}`}>{piano.nome}</h3>
+                                  {isActive && (
+                                    <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                                      ATTIVO
+                                    </span>
+                                  )}
+                                </div>
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>{piano.descrizione}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-green-400 font-black text-2xl">€{piano.costoPerOrdine.toFixed(2)}</p>
+                              <p className={`text-xs ${TEXT_SECONDARY}`}>€/ordine</p>
+                            </div>
+                          </div>
+                          
+                          {/* Dettagli piano (se prepagato) */}
+                          {piano.crediti && (
+                            <div className={`mt-3 pt-3 border-t border-gray-700 grid grid-cols-3 gap-2 text-center`}>
+                              <div>
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>Crediti</p>
+                                <p className={`font-bold ${TEXT_PRIMARY}`}>{piano.crediti}</p>
+                              </div>
+                              <div>
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>Bonus</p>
+                                <p className={`font-bold ${piano.bonus > 0 ? 'text-green-400' : TEXT_PRIMARY}`}>
+                                  {piano.bonus > 0 ? `+${piano.bonus}` : '0'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>Importo</p>
+                                <p className={`font-bold ${TEXT_PRIMARY}`}>€{piano.importo}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                  {planId !== 'pro' && (
+                  
+                  {/* CTA Upgrade */}
+                  <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 p-4 rounded-xl border border-amber-500/50">
+                    <p className={`text-sm ${TEXT_SECONDARY} mb-2`}>
+                      💡 Vuoi risparmiare? Più ordini fai, meno paghi!
+                    </p>
                     <button
-                      onClick={() => handleSubscribe(STRIPE_PRICES.pro)}
-                      disabled={checkoutLoading}
-                      className="bg-gradient-to-r from-orange-500 to-red-600 text-white px-10 py-5 rounded-2xl font-black text-xl shadow-2xl shadow-[#608beb]/50 hover:from-orange-600 hover:to-red-700 hover:scale-105 transition-all flex items-center gap-3 disabled:opacity-50 border border-[#608beb]"
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg"
                     >
-                      <Star className="w-6 h-6 fill-current" />
-                      {checkoutLoading ? 'Attendere...' : 'PASSA A PRO - €39.90'}
+                      Richiedi Upgrade Piano
                     </button>
-                  )}
+                  </div>
+                  
+                  {/* Link Contratti */}
+                  <div className={`${BG_TUTTO} p-4 rounded-xl border ${BORDER_BLU}`}>
+                    <h4 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📄 Documenti</h4>
+                    <div className="space-y-2">
+                      <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer"
+                        className={`block ${TEXT_SECONDARY} hover:text-[#608beb] transition-colors text-sm`}>
+                        → Termini di Servizio
+                      </a>
+                      <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer"
+                        className={`block ${TEXT_SECONDARY} hover:text-[#608beb] transition-colors text-sm`}>
+                        → Privacy Policy
+                      </a>
+                      <a href="https://ordini-lampo.it/tariffe" target="_blank" rel="noopener noreferrer"
+                        className={`block ${TEXT_SECONDARY} hover:text-[#608beb] transition-colors text-sm`}>
+                        → Listino Completo
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* COLONNA DESTRA: Widget Contatore + Piano Attivo */}
+                <div className="space-y-6">
+                  
+                  {/* 📊 WIDGET CONTATORE SETTIMANALE */}
+                  <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 p-6 rounded-2xl border border-green-500/50 shadow-xl">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className={`text-xl font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>
+                        📊 Questa Settimana
+                      </h3>
+                      <button 
+                        onClick={loadWeeklyStats}
+                        className="text-green-400 hover:text-green-300 text-sm font-medium"
+                      >
+                        🔄 Aggiorna
+                      </button>
+                    </div>
+                    
+                    {weeklyStats.loading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500 mx-auto"></div>
+                        <p className={`${TEXT_SECONDARY} mt-2 text-sm`}>Caricamento...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Contatore Ordini */}
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="bg-[#212121] p-4 rounded-xl border border-green-500/30">
+                            <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Ordini ricevuti</p>
+                            <p className="text-4xl font-black text-green-400">{weeklyStats.ordersCount}</p>
+                          </div>
+                          <div className="bg-[#212121] p-4 rounded-xl border border-green-500/30">
+                            <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Fee Ordini-Lampo</p>
+                            <p className="text-4xl font-black text-amber-400">€{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</p>
+                          </div>
+                        </div>
+                        
+                        {/* Calcolo dettagliato */}
+                        <div className="bg-[#212121] p-4 rounded-xl border border-gray-700">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className={TEXT_SECONDARY}>{weeklyStats.ordersCount} ordini × €{weeklyStats.feePerOrdine?.toFixed(2) || '0.00'}</span>
+                            <span className="text-amber-400 font-bold">= €{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</span>
+                          </div>
+                        </div>
+                        
+                        {/* Periodo */}
+                        <p className={`text-xs ${TEXT_SECONDARY} mt-3 text-center`}>
+                          📅 {weeklyStats.periodStart?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })} - {weeklyStats.periodEnd?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* 🏷️ FASCIONE PIANO ATTIVO */}
+                  <div className={`bg-gradient-to-br from-[#608beb]/20 to-blue-900/30 p-6 rounded-2xl border border-[#608beb] shadow-xl`}>
+                    <p className={`text-xs ${TEXT_SECONDARY} uppercase tracking-wider mb-2`}>Il tuo piano attuale</p>
+                    
+                    {(() => {
+                      const pianoAttivo = PIANI_TARIFFARI[planId] || PIANI_TARIFFARI.freedom_150;
+                      return (
+                        <>
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${pianoAttivo.colore} flex items-center justify-center text-white font-black text-2xl shadow-lg`}>
+                              {pianoAttivo.nomeBadge.charAt(0)}
+                            </div>
+                            <div>
+                              <h2 className={`text-3xl font-black ${TEXT_PRIMARY}`}>{pianoAttivo.nome}</h2>
+                              <p className="text-green-400 font-bold text-xl">€{pianoAttivo.costoPerOrdine.toFixed(2)} €/ordine</p>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-[#212121] p-4 rounded-xl border border-gray-700 space-y-2">
+                            <div className="flex justify-between">
+                              <span className={TEXT_SECONDARY}>Stato</span>
+                              <span className="text-green-500 font-bold">✅ ATTIVO</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={TEXT_SECONDARY}>Prossimo pagamento</span>
+                              <span className={`${TEXT_PRIMARY} font-medium`}>
+                                {pianoAttivo.id === 'freedom_150' ? 'Venerdì' : 'A esaurimento crediti'}
+                              </span>
+                            </div>
+                            {pianoAttivo.crediti && (
+                              <div className="flex justify-between">
+                                <span className={TEXT_SECONDARY}>Crediti totali</span>
+                                <span className={`${TEXT_PRIMARY} font-medium`}>{pianoAttivo.totale}</span>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  
+                  {/* Info Pagamento */}
+                  <div className={`${BG_TUTTO} p-4 rounded-xl border ${BORDER_BLU}`}>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">💳</span>
+                      <div>
+                        <h4 className={`font-bold ${TEXT_PRIMARY}`}>Pagamento Settimanale</h4>
+                        <p className={`text-sm ${TEXT_SECONDARY}`}>
+                          Ogni venerdì ricevi il riepilogo ordini e il link per pagare via WhatsApp.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
                 </div>
               </div>
             )}
