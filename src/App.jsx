@@ -19,13 +19,14 @@ const PIANI_TARIFFARI = {
     nome: 'FREEDOM 150',
     nomeBadge: 'FREEDOM',
     tariffa: 1.20,
-    crediti: null, // pay-as-you-go
+    crediti: 150, // linea di credito settimanale
     bonus: 0,
-    totale: 150, // max settimanale
-    importo: null, // variabile
-    costoPerOrdine: 1.20, // €1.20 per ordine
-    colore: 'from-gray-500 to-gray-600',
-    descrizione: 'Pay-as-you-go settimanale'
+    totale: 150,
+    importo: null, // variabile, paghi a consumo
+    costoPerOrdine: 1.20,
+    colore: 'from-emerald-500 to-teal-600',
+    descrizione: 'Linea di credito 150 ordini/settimana',
+    descrizioneEstesa: 'Lavora tranquillo, paghi solo quello che consumi. Ogni venerdì ricevi il riepilogo e il link per saldare.'
   },
   lampo_500: {
     id: 'lampo_500',
@@ -42,8 +43,8 @@ const PIANI_TARIFFARI = {
   },
   max_1000: {
     id: 'max_1000',
-    nome: 'MAX 1000',
-    nomeBadge: 'MAX',
+    nome: 'LAMPO 1000',
+    nomeBadge: 'LAMPO',
     tariffa: 0.90,
     crediti: 1000,
     bonus: 50,
@@ -167,6 +168,13 @@ export default function OrdinlampoAdmin() {
     periodEnd: null,
     loading: true
   });
+  
+  // 📋 Popup Upgrade Piano
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(null);
+  const [contractAccepted, setContractAccepted] = useState(false);
+  const [signatureName, setSignatureName] = useState('');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [deliveryFee, setDeliveryFee] = useState(0);
@@ -758,215 +766,410 @@ export default function OrdinlampoAdmin() {
               </div>
             )}
 
-            {/* TAB ABBONAMENTO - LAYOUT 2 COLONNE */}
+            {/* TAB ABBONAMENTO - LAYOUT 2 COLONNE CON SEPARAZIONE VISIVA */}
             {activeTab === 'subscription' && (
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-6">
                 
-                {/* COLONNA SINISTRA: Tariffe Disponibili */}
-                <div className="space-y-6">
-                  <h2 className={`text-2xl font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>
-                    📋 Tariffe Disponibili
-                  </h2>
-                  
-                  {/* Lista Piani */}
-                  <div className="space-y-3">
-                    {Object.values(PIANI_TARIFFARI).map((piano) => {
-                      const isActive = planId === piano.id;
-                      return (
-                        <div
-                          key={piano.id}
-                          className={`${BG_TUTTO} p-4 rounded-xl border transition-all hover:scale-[1.01] ${
-                            isActive 
-                              ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
-                              : BORDER_BLU
-                          }`}
-                        >
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${piano.colore} flex items-center justify-center text-white font-bold text-lg shadow-lg`}>
-                                {piano.nomeBadge.charAt(0)}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <h3 className={`font-bold text-lg ${TEXT_PRIMARY}`}>{piano.nome}</h3>
-                                  {isActive && (
-                                    <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">
-                                      ATTIVO
-                                    </span>
+                {/* GRIGLIA 2 COLONNE */}
+                <div className="grid md:grid-cols-2 gap-6">
+                
+                  {/* ═══════════════════════════════════════════════════════════ */}
+                  {/* COLONNA SINISTRA: TARIFFE DISPONIBILI                        */}
+                  {/* ═══════════════════════════════════════════════════════════ */}
+                  <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-6 rounded-2xl border border-slate-600">
+                    
+                    {/* TITOLONE */}
+                    <h2 className={`text-3xl font-black ${TEXT_PRIMARY} mb-6 flex items-center gap-3`}>
+                      <span className="text-4xl">📋</span>
+                      TARIFFE DISPONIBILI
+                    </h2>
+                    
+                    {/* Lista Piani */}
+                    <div className="space-y-4">
+                      {Object.values(PIANI_TARIFFARI).map((piano) => {
+                        const isActive = planId === piano.id;
+                        const isUpgrade = !isActive && piano.id !== 'freedom_150';
+                        
+                        return (
+                          <div
+                            key={piano.id}
+                            onClick={() => {
+                              if (isUpgrade) {
+                                setSelectedUpgradePlan(piano);
+                                setShowUpgradePopup(true);
+                                setContractAccepted(false);
+                                setSignatureName('');
+                              }
+                            }}
+                            className={`${BG_TUTTO} p-5 rounded-xl border-2 transition-all ${
+                              isActive 
+                                ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
+                                : isUpgrade
+                                  ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-lg hover:shadow-amber-500/20 cursor-pointer hover:scale-[1.02]'
+                                  : 'border-gray-600'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${piano.colore} flex items-center justify-center text-white font-black text-xl shadow-lg`}>
+                                  {piano.nomeBadge.charAt(0)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>{piano.nome}</h3>
+                                    {isActive && (
+                                      <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                                        ✓ ATTIVO
+                                      </span>
+                                    )}
+                                    {isUpgrade && (
+                                      <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full font-bold border border-amber-500/50">
+                                        UPGRADE
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className={`text-sm ${TEXT_SECONDARY}`}>{piano.descrizione}</p>
+                                  {piano.descrizioneEstesa && (
+                                    <p className={`text-xs ${TEXT_SECONDARY} mt-1 italic`}>{piano.descrizioneEstesa}</p>
                                   )}
                                 </div>
-                                <p className={`text-xs ${TEXT_SECONDARY}`}>{piano.descrizione}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-green-400 font-black text-3xl">€{piano.costoPerOrdine.toFixed(2)}</p>
+                                <p className={`text-sm ${TEXT_SECONDARY}`}>€/ordine</p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-green-400 font-black text-2xl">€{piano.costoPerOrdine.toFixed(2)}</p>
-                              <p className={`text-xs ${TEXT_SECONDARY}`}>€/ordine</p>
-                            </div>
-                          </div>
-                          
-                          {/* Dettagli piano (se prepagato) */}
-                          {piano.crediti && (
-                            <div className={`mt-3 pt-3 border-t border-gray-700 grid grid-cols-3 gap-2 text-center`}>
-                              <div>
+                            
+                            {/* Dettagli piano */}
+                            <div className={`mt-4 pt-4 border-t border-gray-700 grid grid-cols-3 gap-3 text-center`}>
+                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
                                 <p className={`text-xs ${TEXT_SECONDARY}`}>Crediti</p>
-                                <p className={`font-bold ${TEXT_PRIMARY}`}>{piano.crediti}</p>
+                                <p className={`font-bold text-lg ${TEXT_PRIMARY}`}>{piano.crediti || piano.totale}</p>
                               </div>
-                              <div>
+                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
                                 <p className={`text-xs ${TEXT_SECONDARY}`}>Bonus</p>
-                                <p className={`font-bold ${piano.bonus > 0 ? 'text-green-400' : TEXT_PRIMARY}`}>
-                                  {piano.bonus > 0 ? `+${piano.bonus}` : '0'}
+                                <p className={`font-bold text-lg ${piano.bonus > 0 ? 'text-green-400' : TEXT_PRIMARY}`}>
+                                  {piano.bonus > 0 ? `+${piano.bonus}` : '—'}
                                 </p>
                               </div>
-                              <div>
+                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
                                 <p className={`text-xs ${TEXT_SECONDARY}`}>Importo</p>
-                                <p className={`font-bold ${TEXT_PRIMARY}`}>€{piano.importo}</p>
+                                <p className={`font-bold text-lg ${TEXT_PRIMARY}`}>
+                                  {piano.importo ? `€${piano.importo}` : 'A consumo'}
+                                </p>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  
-                  {/* CTA Upgrade */}
-                  <div className="bg-gradient-to-r from-amber-900/30 to-orange-900/30 p-4 rounded-xl border border-amber-500/50">
-                    <p className={`text-sm ${TEXT_SECONDARY} mb-2`}>
-                      💡 Vuoi risparmiare? Più ordini fai, meno paghi!
-                    </p>
-                    <button
-                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg"
-                    >
-                      Richiedi Upgrade Piano
-                    </button>
-                  </div>
-                  
-                  {/* Link Contratti */}
-                  <div className={`${BG_TUTTO} p-4 rounded-xl border ${BORDER_BLU}`}>
-                    <h4 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📄 Documenti</h4>
-                    <div className="space-y-2">
-                      <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer"
-                        className={`block ${TEXT_SECONDARY} hover:text-[#608beb] transition-colors text-sm`}>
-                        → Termini di Servizio
-                      </a>
-                      <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer"
-                        className={`block ${TEXT_SECONDARY} hover:text-[#608beb] transition-colors text-sm`}>
-                        → Privacy Policy
-                      </a>
-                      <a href="https://ordini-lampo.it/tariffe" target="_blank" rel="noopener noreferrer"
-                        className={`block ${TEXT_SECONDARY} hover:text-[#608beb] transition-colors text-sm`}>
-                        → Listino Completo
-                      </a>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* COLONNA DESTRA: Widget Contatore + Piano Attivo */}
-                <div className="space-y-6">
-                  
-                  {/* 📊 WIDGET CONTATORE SETTIMANALE */}
-                  <div className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 p-6 rounded-2xl border border-green-500/50 shadow-xl">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className={`text-xl font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>
-                        📊 Questa Settimana
-                      </h3>
-                      <button 
-                        onClick={loadWeeklyStats}
-                        className="text-green-400 hover:text-green-300 text-sm font-medium"
-                      >
-                        🔄 Aggiorna
-                      </button>
+                          </div>
+                        );
+                      })}
                     </div>
                     
-                    {weeklyStats.loading ? (
-                      <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500 mx-auto"></div>
-                        <p className={`${TEXT_SECONDARY} mt-2 text-sm`}>Caricamento...</p>
+                    {/* Link Documenti */}
+                    <div className={`mt-6 ${BG_TUTTO} p-4 rounded-xl border border-gray-700`}>
+                      <h4 className={`font-bold ${TEXT_PRIMARY} mb-3 flex items-center gap-2`}>
+                        <span>📄</span> Documenti Legali
+                      </h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer"
+                          className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors">
+                          <p className={`text-xs ${TEXT_SECONDARY}`}>Termini</p>
+                        </a>
+                        <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer"
+                          className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors">
+                          <p className={`text-xs ${TEXT_SECONDARY}`}>Privacy</p>
+                        </a>
+                        <a href="https://ordini-lampo.it/tariffe" target="_blank" rel="noopener noreferrer"
+                          className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors">
+                          <p className={`text-xs ${TEXT_SECONDARY}`}>Listino</p>
+                        </a>
                       </div>
-                    ) : (
-                      <>
-                        {/* Contatore Ordini */}
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div className="bg-[#212121] p-4 rounded-xl border border-green-500/30">
-                            <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Ordini ricevuti</p>
-                            <p className="text-4xl font-black text-green-400">{weeklyStats.ordersCount}</p>
-                          </div>
-                          <div className="bg-[#212121] p-4 rounded-xl border border-green-500/30">
-                            <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Fee Ordini-Lampo</p>
-                            <p className="text-4xl font-black text-amber-400">€{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Calcolo dettagliato */}
-                        <div className="bg-[#212121] p-4 rounded-xl border border-gray-700">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className={TEXT_SECONDARY}>{weeklyStats.ordersCount} ordini × €{weeklyStats.feePerOrdine?.toFixed(2) || '0.00'}</span>
-                            <span className="text-amber-400 font-bold">= €{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Periodo */}
-                        <p className={`text-xs ${TEXT_SECONDARY} mt-3 text-center`}>
-                          📅 {weeklyStats.periodStart?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })} - {weeklyStats.periodEnd?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </p>
-                      </>
-                    )}
+                    </div>
                   </div>
                   
-                  {/* 🏷️ FASCIONE PIANO ATTIVO */}
-                  <div className={`bg-gradient-to-br from-[#608beb]/20 to-blue-900/30 p-6 rounded-2xl border border-[#608beb] shadow-xl`}>
-                    <p className={`text-xs ${TEXT_SECONDARY} uppercase tracking-wider mb-2`}>Il tuo piano attuale</p>
+                  {/* ═══════════════════════════════════════════════════════════ */}
+                  {/* COLONNA DESTRA: IL TUO PIANO ATTIVO                          */}
+                  {/* ═══════════════════════════════════════════════════════════ */}
+                  <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 p-6 rounded-2xl border border-emerald-500/50">
                     
+                    {/* TITOLONE */}
+                    <h2 className={`text-3xl font-black ${TEXT_PRIMARY} mb-6 flex items-center gap-3`}>
+                      <span className="text-4xl">🎯</span>
+                      IL TUO PIANO
+                    </h2>
+                    
+                    {/* 📊 WIDGET CONTATORE SETTIMANALE */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-green-500/30 mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-lg font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>
+                          📊 Questa Settimana
+                        </h3>
+                        <button 
+                          onClick={loadWeeklyStats}
+                          className="text-green-400 hover:text-green-300 text-sm font-medium bg-green-500/10 px-3 py-1 rounded-lg"
+                        >
+                          🔄 Aggiorna
+                        </button>
+                      </div>
+                      
+                      {weeklyStats.loading ? (
+                        <div className="text-center py-6">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="bg-[#212121] p-4 rounded-xl text-center">
+                              <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Ordini</p>
+                              <p className="text-4xl font-black text-green-400">{weeklyStats.ordersCount}</p>
+                            </div>
+                            <div className="bg-[#212121] p-4 rounded-xl text-center">
+                              <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Fee Totale</p>
+                              <p className="text-4xl font-black text-amber-400">€{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</p>
+                            </div>
+                          </div>
+                          <div className="bg-[#212121] p-3 rounded-lg text-center">
+                            <span className={`text-sm ${TEXT_SECONDARY}`}>
+                              {weeklyStats.ordersCount} × €{weeklyStats.feePerOrdine?.toFixed(2) || '1.20'}
+                            </span>
+                            <span className="text-amber-400 font-bold ml-2">
+                              = €{weeklyStats.totaleFee?.toFixed(2) || '0.00'}
+                            </span>
+                          </div>
+                          <p className={`text-xs ${TEXT_SECONDARY} mt-3 text-center`}>
+                            📅 {weeklyStats.periodStart?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })} — {weeklyStats.periodEnd?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* 🏷️ FASCIONE PIANO ATTIVO */}
                     {(() => {
                       const pianoAttivo = PIANI_TARIFFARI[planId] || PIANI_TARIFFARI.freedom_150;
                       return (
-                        <>
+                        <div className="bg-[#1a1a1a] p-5 rounded-xl border-2 border-green-500 shadow-lg shadow-green-500/20">
                           <div className="flex items-center gap-4 mb-4">
-                            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${pianoAttivo.colore} flex items-center justify-center text-white font-black text-2xl shadow-lg`}>
+                            <div className={`w-20 h-20 rounded-2xl bg-gradient-to-r ${pianoAttivo.colore} flex items-center justify-center text-white font-black text-3xl shadow-xl`}>
                               {pianoAttivo.nomeBadge.charAt(0)}
                             </div>
                             <div>
+                              <p className={`text-xs ${TEXT_SECONDARY} uppercase tracking-wider`}>Piano Attivo</p>
                               <h2 className={`text-3xl font-black ${TEXT_PRIMARY}`}>{pianoAttivo.nome}</h2>
-                              <p className="text-green-400 font-bold text-xl">€{pianoAttivo.costoPerOrdine.toFixed(2)} €/ordine</p>
+                              <p className="text-green-400 font-bold text-2xl">€{pianoAttivo.costoPerOrdine.toFixed(2)} <span className="text-base">€/ordine</span></p>
                             </div>
                           </div>
                           
-                          <div className="bg-[#212121] p-4 rounded-xl border border-gray-700 space-y-2">
-                            <div className="flex justify-between">
+                          <div className="space-y-2">
+                            <div className="flex justify-between bg-[#212121] p-3 rounded-lg">
                               <span className={TEXT_SECONDARY}>Stato</span>
                               <span className="text-green-500 font-bold">✅ ATTIVO</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between bg-[#212121] p-3 rounded-lg">
                               <span className={TEXT_SECONDARY}>Prossimo pagamento</span>
                               <span className={`${TEXT_PRIMARY} font-medium`}>
-                                {pianoAttivo.id === 'freedom_150' ? 'Venerdì' : 'A esaurimento crediti'}
+                                {pianoAttivo.id === 'freedom_150' ? '💳 Venerdì' : '📦 A esaurimento'}
                               </span>
                             </div>
-                            {pianoAttivo.crediti && (
-                              <div className="flex justify-between">
-                                <span className={TEXT_SECONDARY}>Crediti totali</span>
-                                <span className={`${TEXT_PRIMARY} font-medium`}>{pianoAttivo.totale}</span>
-                              </div>
-                            )}
+                            <div className="flex justify-between bg-[#212121] p-3 rounded-lg">
+                              <span className={TEXT_SECONDARY}>Crediti disponibili</span>
+                              <span className={`${TEXT_PRIMARY} font-bold`}>{pianoAttivo.totale}</span>
+                            </div>
                           </div>
-                        </>
+                        </div>
                       );
                     })()}
+                    
+                    {/* Info Pagamento */}
+                    <div className="mt-6 bg-[#1a1a1a] p-4 rounded-xl border border-gray-700">
+                      <div className="flex items-start gap-3">
+                        <span className="text-3xl">💳</span>
+                        <div>
+                          <h4 className={`font-bold ${TEXT_PRIMARY}`}>Come Funziona il Pagamento</h4>
+                          <p className={`text-sm ${TEXT_SECONDARY} mt-1`}>
+                            Ogni venerdì ricevi su WhatsApp il riepilogo ordini della settimana e il link per pagare con carta.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
                   </div>
-                  
-                  {/* Info Pagamento */}
-                  <div className={`${BG_TUTTO} p-4 rounded-xl border ${BORDER_BLU}`}>
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">💳</span>
-                      <div>
-                        <h4 className={`font-bold ${TEXT_PRIMARY}`}>Pagamento Settimanale</h4>
-                        <p className={`text-sm ${TEXT_SECONDARY}`}>
-                          Ogni venerdì ricevi il riepilogo ordini e il link per pagare via WhatsApp.
+                </div>
+                
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {/* POPUP UPGRADE CONTRATTO                                      */}
+                {/* ═══════════════════════════════════════════════════════════ */}
+                {showUpgradePopup && selectedUpgradePlan && (
+                  <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1a1a1a] rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border-2 border-amber-500">
+                      
+                      {/* Header */}
+                      <div className="bg-gradient-to-r from-amber-600 to-orange-600 p-6 rounded-t-xl">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-amber-100 text-sm font-medium">UPGRADE A</p>
+                            <h2 className="text-3xl font-black text-white">{selectedUpgradePlan.nome}</h2>
+                            <p className="text-amber-100 mt-1">€{selectedUpgradePlan.importo} per {selectedUpgradePlan.totale} ordini</p>
+                          </div>
+                          <button 
+                            onClick={() => setShowUpgradePopup(false)}
+                            className="text-white/80 hover:text-white text-2xl"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Corpo */}
+                      <div className="p-6 space-y-6">
+                        
+                        {/* Riepilogo Piano */}
+                        <div className="bg-[#212121] p-4 rounded-xl">
+                          <h3 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📦 Riepilogo Ordine</h3>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className={TEXT_SECONDARY}>Piano</span>
+                              <span className={TEXT_PRIMARY}>{selectedUpgradePlan.nome}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={TEXT_SECONDARY}>Crediti base</span>
+                              <span className={TEXT_PRIMARY}>{selectedUpgradePlan.crediti}</span>
+                            </div>
+                            {selectedUpgradePlan.bonus > 0 && (
+                              <div className="flex justify-between">
+                                <span className={TEXT_SECONDARY}>Bonus omaggio</span>
+                                <span className="text-green-400">+{selectedUpgradePlan.bonus}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between border-t border-gray-700 pt-2 mt-2">
+                              <span className={TEXT_SECONDARY}>Totale crediti</span>
+                              <span className="text-green-400 font-bold">{selectedUpgradePlan.totale}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className={TEXT_SECONDARY}>Costo effettivo</span>
+                              <span className="text-green-400 font-bold">€{selectedUpgradePlan.costoPerOrdine.toFixed(2)}/ordine</span>
+                            </div>
+                            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
+                              <span className={TEXT_PRIMARY}>TOTALE</span>
+                              <span className="text-amber-400">€{selectedUpgradePlan.importo}</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Contratto */}
+                        <div className="bg-[#212121] p-4 rounded-xl max-h-48 overflow-y-auto text-xs text-gray-400">
+                          <h4 className="font-bold text-white mb-2">📜 TERMINI E CONDIZIONI</h4>
+                          <p className="mb-2">Sottoscrivendo questo ordine, accetto i seguenti termini:</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            <li>I crediti acquistati sono validi per 12 mesi dalla data di acquisto.</li>
+                            <li>I crediti non sono rimborsabili né trasferibili.</li>
+                            <li>Il piano si attiva immediatamente dopo il pagamento.</li>
+                            <li>Ogni ordine ricevuto consuma 1 credito.</li>
+                            <li>Al termine dei crediti, il servizio passa automaticamente a FREEDOM 150.</li>
+                            <li>Accetto i <a href="https://ordini-lampo.it/termini-servizio" target="_blank" className="text-blue-400 underline">Termini di Servizio</a> e la <a href="https://ordini-lampo.it/privacy-policy" target="_blank" className="text-blue-400 underline">Privacy Policy</a>.</li>
+                          </ul>
+                        </div>
+                        
+                        {/* Checkbox Accettazione */}
+                        <label className="flex items-start gap-3 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={contractAccepted}
+                            onChange={(e) => setContractAccepted(e.target.checked)}
+                            className="w-6 h-6 mt-0.5 rounded border-2 border-amber-500 bg-transparent checked:bg-amber-500"
+                          />
+                          <span className={`text-sm ${TEXT_PRIMARY}`}>
+                            Ho letto e accetto integralmente i termini e condizioni del contratto
+                          </span>
+                        </label>
+                        
+                        {/* Firma Digitale */}
+                        <div>
+                          <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-2`}>
+                            ✍️ Firma Digitale (scrivi il tuo nome completo)
+                          </label>
+                          <input
+                            type="text"
+                            value={signatureName}
+                            onChange={(e) => setSignatureName(e.target.value)}
+                            placeholder="Mario Rossi"
+                            className={`w-full p-4 rounded-xl bg-[#212121] border-2 ${
+                              signatureName.length >= 3 ? 'border-green-500' : 'border-gray-600'
+                            } ${TEXT_PRIMARY} font-medium text-lg`}
+                          />
+                          <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>
+                            La firma vale come accettazione formale del contratto. Data: {new Date().toLocaleDateString('it-IT')}
+                          </p>
+                        </div>
+                        
+                        {/* Bottone Paga */}
+                        <button
+                          disabled={!contractAccepted || signatureName.length < 3 || upgradeLoading}
+                          onClick={async () => {
+                            setUpgradeLoading(true);
+                            try {
+                              // TODO: Chiamata a Stripe Checkout con Price ID del piano
+                              // Per ora redirect a pagina generica
+                              const priceIds = {
+                                lampo_500: 'price_LAMPO500_TODO',
+                                max_1000: 'price_LAMPO1000_TODO', 
+                                king_1500: 'price_KING1500_TODO'
+                              };
+                              const priceId = priceIds[selectedUpgradePlan.id];
+                              
+                              // Salva firma nel DB
+                              await supabase.from('contract_signatures').insert({
+                                restaurant_id: RESTAURANT_ID,
+                                plan_id: selectedUpgradePlan.id,
+                                signature_name: signatureName,
+                                signed_at: new Date().toISOString(),
+                                ip_address: 'client-side'
+                              });
+                              
+                              // Chiama Stripe
+                              const response = await fetch(`${SUPABASE_FUNCTIONS_URL}/stripe-checkout`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  priceId: priceId,
+                                  restaurantId: RESTAURANT_ID,
+                                  successUrl: window.location.href,
+                                  cancelUrl: window.location.href
+                                })
+                              });
+                              
+                              const { url } = await response.json();
+                              if (url) window.location.href = url;
+                              
+                            } catch (error) {
+                              console.error('Errore upgrade:', error);
+                              alert('Errore durante il processo. Riprova.');
+                            }
+                            setUpgradeLoading(false);
+                          }}
+                          className={`w-full py-4 rounded-xl font-black text-xl transition-all ${
+                            contractAccepted && signatureName.length >= 3
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/30'
+                              : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {upgradeLoading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                              Elaborazione...
+                            </span>
+                          ) : (
+                            `💳 PAGA €${selectedUpgradePlan.importo} E ATTIVA`
+                          )}
+                        </button>
+                        
+                        <p className={`text-xs ${TEXT_SECONDARY} text-center`}>
+                          🔒 Pagamento sicuro tramite Stripe. I tuoi dati sono protetti.
                         </p>
+                        
                       </div>
                     </div>
                   </div>
-                  
-                </div>
+                )}
+                
               </div>
             )}
 
