@@ -497,18 +497,102 @@ export default function OrdinlampoAdmin() {
     );
   }
 
-  if (authError) {
+  // 🔐 LOGIN FORM STATE
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+  const [showLoginForm, setShowLoginForm] = useState(false);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError('');
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      
+      if (error) throw error;
+      
+      // Ricarica la pagina per inizializzare l'app
+      window.location.reload();
+    } catch (error) {
+      setLoginError(error.message || 'Errore durante il login');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  if (authError || showLoginForm) {
     return (
       <div className={`min-h-screen ${BG_TUTTO} flex items-center justify-center p-4`}>
-        <div className="max-w-md w-full bg-[#1a1a1a] p-8 rounded-2xl border border-red-500/50 shadow-2xl text-center">
-          <div className="w-16 h-16 bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-            <LogOut className="w-8 h-8 text-red-500" />
+        <div className="max-w-md w-full bg-[#1a1a1a] p-8 rounded-2xl border border-[#608beb] shadow-2xl">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-white mb-2">⚡ Ordini-Lampo</h1>
+            <p className="text-gray-400">Admin Panel</p>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Accesso Negato</h2>
-          <p className="text-gray-400 mb-6">{authError}</p>
-          <button onClick={handleLogout} className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold w-full hover:bg-red-700 transition-colors">
-            Torna al Login
-          </button>
+          
+          {authError && !showLoginForm && (
+            <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-4 mb-6 text-center">
+              <p className="text-red-400 text-sm">{authError}</p>
+            </div>
+          )}
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-2">Email</label>
+              <input
+                type="email"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                className="w-full bg-[#212121] border border-gray-600 rounded-xl p-4 text-white focus:border-[#608beb] focus:outline-none transition-colors"
+                placeholder="la-tua@email.com"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-400 text-sm font-medium mb-2">Password</label>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                className="w-full bg-[#212121] border border-gray-600 rounded-xl p-4 text-white focus:border-[#608beb] focus:outline-none transition-colors"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            
+            {loginError && (
+              <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-3 text-center">
+                <p className="text-red-400 text-sm">{loginError}</p>
+              </div>
+            )}
+            
+            <button
+              type="submit"
+              disabled={loginLoading}
+              className="w-full bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white font-bold py-4 px-6 rounded-xl hover:from-[#5078d8] hover:to-[#3a6bc9] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#608beb]/30"
+            >
+              {loginLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Accesso in corso...
+                </span>
+              ) : (
+                '🔐 Accedi'
+              )}
+            </button>
+          </form>
+          
+          <div className="mt-6 text-center">
+            <p className="text-gray-500 text-xs">
+              Powered by Ordini-Lampo • Pagamenti sicuri con Stripe
+            </p>
+          </div>
         </div>
       </div>
     );
