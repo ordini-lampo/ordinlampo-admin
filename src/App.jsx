@@ -191,6 +191,12 @@ export default function OrdinlampoAdmin() {
   const [signatureName, setSignatureName] = useState('');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
 
+  // 🔐 LOGIN FORM STATE
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
   // ============================================
   // INITIALIZATION & AUTH (CRITICAL)
   // ============================================
@@ -462,6 +468,29 @@ export default function OrdinlampoAdmin() {
     window.location.reload();
   };
 
+  // 🔐 LOGIN HANDLER
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError('');
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+      
+      if (error) throw error;
+      
+      // Ricarica la pagina per inizializzare l'app
+      window.location.reload();
+    } catch (error) {
+      setLoginError(error.message || 'Errore durante il login');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   const renderBowlIcon = (sizeId) => {
     const iconClass = "text-[#608beb]";
     switch (sizeId) {
@@ -497,36 +526,7 @@ export default function OrdinlampoAdmin() {
     );
   }
 
-  // 🔐 LOGIN FORM STATE
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [showLoginForm, setShowLoginForm] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError('');
-    
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: loginEmail,
-        password: loginPassword,
-      });
-      
-      if (error) throw error;
-      
-      // Ricarica la pagina per inizializzare l'app
-      window.location.reload();
-    } catch (error) {
-      setLoginError(error.message || 'Errore durante il login');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  if (authError || showLoginForm) {
+  if (authError) {
     return (
       <div className={`min-h-screen ${BG_TUTTO} flex items-center justify-center p-4`}>
         <div className="max-w-md w-full bg-[#1a1a1a] p-8 rounded-2xl border border-[#608beb] shadow-2xl">
@@ -535,7 +535,7 @@ export default function OrdinlampoAdmin() {
             <p className="text-gray-400">Admin Panel</p>
           </div>
           
-          {authError && !showLoginForm && (
+          {authError && (
             <div className="bg-red-900/30 border border-red-500/50 rounded-xl p-4 mb-6 text-center">
               <p className="text-red-400 text-sm">{authError}</p>
             </div>
