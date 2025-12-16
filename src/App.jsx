@@ -17,12 +17,12 @@ const toNumber = (v, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-// ⚠️ STRIPE PRICE IDs - DA SOSTITUIRE CON ID REALI
+// ✅ STRIPE PRICE IDs - CONFIGURATI 16 DIC 2025
 const STRIPE_PRICES = {
-  freedom_150: '', // Piano default - metered billing
-  lampo_500: 'price_LAMPO500_TODO',
-  max_1000: 'price_LAMPO1000_TODO',
-  king_1500: 'price_KING1500_TODO'
+  freedom_150: '', // Piano default - metered billing (no prepaid)
+  lampo_500: 'price_1SetfG2LTzIeFZapTf9o9vYZ',
+  max_1000: 'price_1Setn62LTzIeFZapulj5s40K',
+  king_1500: 'price_1SetpV2LTzIeFZap141KtoNJ'
 };
 
 // Helper: verifica se piano ha Stripe ID valido (formato: price_XXXX...)
