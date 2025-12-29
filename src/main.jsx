@@ -4,10 +4,14 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import App from './App.jsx'
 import './index.css'
 
+// ============================================
+// 🔐 MAIN.JSX - ClerkProvider UNICO WRAPPER
+// ============================================
+
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
 if (!CLERK_PUBLISHABLE_KEY) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in environment variables')
+  throw new Error("VITE_CLERK_PUBLISHABLE_KEY mancante nel file .env")
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
