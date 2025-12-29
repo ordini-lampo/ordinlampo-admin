@@ -7,205 +7,169 @@ import {
   useAuth 
 } from '@clerk/clerk-react';
 import { 
-  Save, Plus, Trash2, Edit2, MapPin, Settings, CreditCard, 
-  ShoppingBag, RefreshCw, CheckCircle, XCircle, FileText, 
-  ChevronRight, TrendingUp, DollarSign, Percent, Sparkles, Lock, LogOut
+  Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, 
+  Settings, CreditCard, Star, AlertCircle, Phone, ChevronDown, ChevronUp,
+  ShoppingBag, TrendingUp, RefreshCw, CheckCircle, LogOut, X
 } from 'lucide-react';
 
 // ============================================
-// 🔐 ADMIN PANEL ORDINLAMPO v3.0 COMPLETE
-// Clerk Auth + Gemini Design + ChatGPT Fixes
+// 💎 ADMIN PANEL ORDINLAMPO v4.0 PROFESSIONAL
+// Design: Grigio #212121 + Bordi Blu #608beb
+// Migrato da Supabase a Clerk/Neon
 // ============================================
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ordini-lampo-api.ordini-lampo.workers.dev';
 
-// 🛡️ HELPER: Numeri sicuri (FIX ChatGPT - evita NaN.toFixed crash)
+// 🛡️ HELPER: Numeri sicuri (evita NaN.toFixed crash)
 const toNumber = (value, fallback = 0) => {
   const n = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
   return Number.isFinite(n) ? n : fallback;
 };
 
-// 💳 PIANI TARIFFARI
-const PRICING_PLANS = {
-  freedom: {
-    id: 'freedom', name: 'FREEDOM', emoji: '🆓',
-    price_per_order: 1.20, monthly_fee: 0,
-    description: 'Paga solo per ordine',
-    features: ['€1.20 per ordine', 'Nessun abbonamento', 'Disdici quando vuoi'],
-    color: 'from-gray-100 to-gray-200', border: 'border-gray-300'
+// 📊 PIANI TARIFFARI ORDINI-LAMPO (RETAIL)
+const PIANI_TARIFFARI = {
+  freedom_150: {
+    id: 'freedom_150',
+    nome: 'FREEDOM 150',
+    nomeBadge: 'FREEDOM',
+    tariffa: 1.20,
+    crediti: 150,
+    bonus: 0,
+    totale: 150,
+    importo: null,
+    costoPerOrdine: 1.20,
+    colore: 'from-emerald-500 to-teal-600',
+    descrizione: 'Linea di credito 150 ordini/settimana',
+    descrizioneEstesa: 'Lavora tranquillo, paghi solo quello che consumi. Ogni venerdì ricevi il riepilogo e il link per saldare.'
   },
   lampo_500: {
-    id: 'lampo_500', name: 'LAMPO 500', emoji: '⚡',
-    price_per_order: 0.98, monthly_fee: 0, credits: 500, prepaid: 490,
-    description: 'Pacchetto prepagato 500 ordini',
-    features: ['€0.98 per ordine', '500 ordini prepagati', 'Risparmio 18%'],
-    color: 'from-blue-100 to-blue-200', border: 'border-blue-400'
+    id: 'lampo_500',
+    nome: 'LAMPO 500',
+    nomeBadge: 'LAMPO',
+    tariffa: 0.98,
+    crediti: 500,
+    bonus: 0,
+    totale: 500,
+    importo: 490,
+    costoPerOrdine: 0.98,
+    colore: 'from-blue-500 to-blue-600',
+    descrizione: 'Piano standard prepagato'
   },
-  lampo_max: {
-    id: 'lampo_max', name: 'LAMPO MAX', emoji: '🚀',
-    price_per_order: 0.78, monthly_fee: 99,
-    description: 'Per ristoranti ad alto volume',
-    features: ['€0.78 per ordine', '€99/mese fisso', 'Ordini illimitati'],
-    color: 'from-orange-100 to-yellow-100', border: 'border-orange-400',
-    recommended: true
+  max_1000: {
+    id: 'max_1000',
+    nome: 'LAMPO 1000',
+    nomeBadge: 'LAMPO',
+    tariffa: 0.90,
+    crediti: 1000,
+    bonus: 50,
+    totale: 1050,
+    importo: 900,
+    costoPerOrdine: 0.86,
+    colore: 'from-purple-500 to-purple-600',
+    descrizione: 'Per chi spinge forte'
+  },
+  king_1500: {
+    id: 'king_1500',
+    nome: 'KING 1500',
+    nomeBadge: 'KING',
+    tariffa: 0.80,
+    crediti: 1500,
+    bonus: 100,
+    totale: 1600,
+    importo: 1200,
+    costoPerOrdine: 0.75,
+    colore: 'from-amber-500 to-amber-600',
+    descrizione: 'Elite retail - Miglior prezzo'
   }
 };
 
+// 🎨 PALETTE FINALE (Stile Claude.ai - Grigio Scuro)
+const BG_TUTTO = 'bg-[#212121]';
+const TEXT_PRIMARY = 'text-gray-50';
+const TEXT_SECONDARY = 'text-gray-400';
+const BORDER_BLU = 'border-[#608beb]';
+
 // Stati ordine
 const ORDER_STATUSES = {
-  PENDING: { label: 'In Attesa', color: 'bg-yellow-100 text-yellow-800', next: 'CONFIRMED' },
-  CONFIRMED: { label: 'Confermato', color: 'bg-blue-100 text-blue-800', next: 'PREPARING' },
-  PREPARING: { label: 'In Preparazione', color: 'bg-purple-100 text-purple-800', next: 'READY' },
-  READY: { label: 'Pronto', color: 'bg-green-100 text-green-800', next: 'DELIVERING' },
-  DELIVERING: { label: 'In Consegna', color: 'bg-indigo-100 text-indigo-800', next: 'DELIVERED' },
-  DELIVERED: { label: 'Consegnato', color: 'bg-gray-100 text-gray-800', next: null },
-  CANCELLED: { label: 'Annullato', color: 'bg-red-100 text-red-800', next: null }
+  PENDING: { label: 'In Attesa', color: 'bg-yellow-500/20 text-yellow-400', next: 'CONFIRMED' },
+  CONFIRMED: { label: 'Confermato', color: 'bg-blue-500/20 text-blue-400', next: 'PREPARING' },
+  PREPARING: { label: 'In Preparazione', color: 'bg-purple-500/20 text-purple-400', next: 'READY' },
+  READY: { label: 'Pronto', color: 'bg-green-500/20 text-green-400', next: 'DELIVERING' },
+  DELIVERING: { label: 'In Consegna', color: 'bg-indigo-500/20 text-indigo-400', next: 'DELIVERED' },
+  DELIVERED: { label: 'Consegnato', color: 'bg-gray-500/20 text-gray-400', next: null },
+  CANCELLED: { label: 'Annullato', color: 'bg-red-500/20 text-red-400', next: null }
 };
 
-// ==================== COMPONENTE TOGGLE (Design Gemini + Fix ChatGPT) ====================
-const Toggle = ({ enabled, onChange, size = 'md', label = 'toggle' }) => {
-  const sizes = {
-    sm: { track: 'w-11 h-6', thumb: 'w-5 h-5', translate: 'translate-x-5' },
-    md: { track: 'w-14 h-8', thumb: 'w-7 h-7', translate: 'translate-x-6' },
-    lg: { track: 'w-16 h-9', thumb: 'w-8 h-8', translate: 'translate-x-7' }
-  };
-  const s = sizes[size];
-  
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      aria-pressed={enabled}
-      onClick={() => onChange(!enabled)}
-      className={`
-        relative inline-flex items-center rounded-full p-0.5
-        transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-        focus:outline-none focus:ring-4 focus:ring-green-200
-        ${s.track}
-        ${enabled 
-          ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg shadow-green-200' 
-          : 'bg-gray-300'
-        }
-      `}
-    >
-      <span
-        className={`
-          inline-block rounded-full bg-white shadow-md
-          transform transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]
-          flex items-center justify-center
-          ${s.thumb}
-          ${enabled ? s.translate : 'translate-x-0'}
-        `}
-      >
-        <span className={`text-xs font-bold transition-opacity duration-200 ${enabled ? 'opacity-100 text-green-500' : 'opacity-0'}`}>
-          ✓
-        </span>
-      </span>
-    </button>
-  );
+// ============================================
+// 🎨 ICONE CUSTOM (Busta Rossa + Bowl SVG)
+// ============================================
+const Icons = {
+  RedEnvelope: ({ className }) => (
+    <svg className={className} viewBox="0 0 100 120" fill="currentColor">
+      <rect x="15" y="30" width="70" height="85" rx="4" />
+      <path d="M15 30 L50 60 L85 30" fill="#B91C1C" />
+      <circle cx="50" cy="70" r="15" fill="#F59E0B" />
+      <text x="50" y="78" fontSize="16" fill="#DC2626" textAnchor="middle" fontWeight="bold">福</text>
+    </svg>
+  ),
+  BowlS: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 10c0 4.4 3.6 8 8 8s8-3.6 8-8H4z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M4 10c0-1 2-2 5-2s5 1 5 2" />
+    </svg>
+  ),
+  BowlM: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9c0 5 4 9 9 9s9-4 9-9H3z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M3 9c0-1.5 2.5-3 6-3s6 1.5 6 3" />
+    </svg>
+  ),
+  BowlL: ({ className }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 8c0 5.5 4.5 10 10 10s10-4.5 10-10H2z" fill="currentColor" fillOpacity="0.15" />
+      <path d="M2 8c0-2.5 3-4.5 7-4.5s7 2 7 4.5" />
+    </svg>
+  )
 };
 
-// ==================== TYPE SELECTOR €/% (Design Gemini) ====================
-const TypeSelector = ({ type, onChange }) => (
-  <div className="inline-flex rounded-xl overflow-hidden shadow-sm bg-gray-100 p-1">
-    <button
-      onClick={() => onChange('euro')}
-      className={`
-        px-5 py-3 rounded-lg font-bold text-lg transition-all duration-200 flex items-center gap-2
-        ${type === 'euro' 
-          ? 'bg-white text-green-600 shadow-md' 
-          : 'text-gray-400 hover:text-gray-600'
-        }
-      `}
-    >
-      <DollarSign className="w-4 h-4" /> €
-    </button>
-    <button
-      onClick={() => onChange('percent')}
-      className={`
-        px-5 py-3 rounded-lg font-bold text-lg transition-all duration-200 flex items-center gap-2
-        ${type === 'percent' 
-          ? 'bg-white text-green-600 shadow-md' 
-          : 'text-gray-400 hover:text-gray-600'
-        }
-      `}
-    >
-      <Percent className="w-4 h-4" /> %
-    </button>
-  </div>
-);
-
-// ==================== VALUE SELECTOR +/- (Design Gemini) ====================
-const ValueSelector = ({ value, onChange, type, step = 0.5, min = 0.5, max = 50 }) => {
-  const safeValue = toNumber(value, min);
-  const increment = () => onChange(Math.min(safeValue + step, max));
-  const decrement = () => onChange(Math.max(safeValue - step, min));
-  
-  return (
-    <div className="flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200 shadow-sm">
-      <button
-        onClick={decrement}
-        className="w-12 h-12 flex items-center justify-center rounded-lg bg-white shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-gray-600 font-bold text-xl"
-      >
-        −
-      </button>
-      <div className="px-4 min-w-[80px] text-center font-black text-gray-800 text-xl">
-        {type === 'euro' ? '€' : ''}{safeValue.toFixed(type === 'euro' ? 2 : 0)}{type === 'percent' ? '%' : ''}
-      </div>
-      <button
-        onClick={increment}
-        className="w-12 h-12 flex items-center justify-center rounded-lg bg-white shadow-sm hover:bg-gray-50 active:scale-95 transition-all text-gray-600 font-bold text-xl"
-      >
-        +
-      </button>
-    </div>
-  );
-};
-
-// ==================== API CLIENT CON CLERK ====================
+// ============================================
+// API CLIENT per Clerk
+// ============================================
 const createApiClient = (getToken) => {
   const fetchWithAuth = async (endpoint, options = {}) => {
-    try {
-      const token = await getToken();
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
-          ...options.headers
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+    const token = await getToken();
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers
       }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`[API] ${endpoint} failed:`, error);
-      return { success: false, error: error.message };
+    });
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(error.error || `HTTP ${res.status}`);
     }
+    return res.json();
   };
 
   return {
     testConnection: async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/health`);
-        return response.ok;
-      } catch {
-        return false;
-      }
+        const res = await fetch(`${API_BASE_URL}/health`);
+        const data = await res.json();
+        return data?.status === 'ok';
+      } catch { return false; }
     },
-    getOrders: (slug, date) => fetchWithAuth(`/admin/orders?date=${date}`),
-    getSettings: (slug) => fetchWithAuth(`/admin/settings`),
-    saveSettings: (slug, data) => fetchWithAuth(`/admin/settings`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
+    getOrders: (date) => fetchWithAuth(`/admin/orders?date=${date}`),
+    getSettings: () => fetchWithAuth('/admin/settings'),
+    saveSettings: (data) => fetchWithAuth('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+    updateOrderStatus: (orderId, status) => fetchWithAuth(`/admin/orders/${orderId}/status`, { 
+      method: 'PATCH', 
+      body: JSON.stringify({ status }) 
     }),
-    updateOrderStatus: (slug, orderId, status) => fetchWithAuth(`/admin/orders/${orderId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status })
-    })
+    signContract: (data) => fetchWithAuth('/admin/contract-signatures', { method: 'POST', body: JSON.stringify(data) }),
+    createCheckout: (data) => fetchWithAuth('/admin/create-checkout', { method: 'POST', body: JSON.stringify(data) })
   };
 };
 
@@ -221,10 +185,11 @@ function AdminPanel() {
   }
   const api = apiRef.current;
 
-  // Restaurant slug from user metadata
+  // Restaurant info from Clerk metadata
   const restaurantSlug = user?.publicMetadata?.restaurant_id || 'pokenjoy-sanremo';
+  const restaurantName = user?.publicMetadata?.restaurant_name || 'Pokenjoy Sanremo';
 
-  // ==================== REFS (FIX ChatGPT) ====================
+  // ==================== REFS ====================
   const notifTimerRef = useRef(null);
   const ordersReqIdRef = useRef(0);
 
@@ -238,6 +203,8 @@ function AdminPanel() {
   const [orders, setOrders] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // ==================== STATI LOCALITÀ ====================
   const [locations, setLocations] = useState([
@@ -252,159 +219,175 @@ function AdminPanel() {
 
   // ==================== STATI PREZZI ====================
   const [pokeSizes, setPokeSizes] = useState([
-    { id: 'small', name: 'Piccola', price: 8.50, emoji: '🥣' },
-    { id: 'medium', name: 'Media', price: 10.50, emoji: '🍜' },
-    { id: 'large', name: 'Grande', price: 12.50, emoji: '🍲' }
+    { id: 'small', name: 'Piccola', price: 8.50 },
+    { id: 'medium', name: 'Media', price: 10.50 },
+    { id: 'large', name: 'Grande', price: 12.50 }
   ]);
   const [extraPrices, setExtraPrices] = useState({ protein: 1.00, ingredient: 0.50, sauce: 0.30 });
   const [floorDelivery, setFloorDelivery] = useState({ enabled: true, fee: 1.50 });
   const [riderTip, setRiderTip] = useState(1.00);
 
   // ==================== STATI ABBONAMENTO ====================
-  const [currentPlan, setCurrentPlan] = useState('freedom');
-  const [credits, setCredits] = useState(0);
-  const [showContractModal, setShowContractModal] = useState(false);
-  const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState(null);
-  const [contractStep, setContractStep] = useState(0);
-
+  const [planId, setPlanId] = useState('freedom_150');
+  const [subscriptionStatus, setSubscriptionStatus] = useState('active');
+  
   // ==================== STATI IMPOSTAZIONI ====================
-  const [restaurantName, setRestaurantName] = useState('Pokenjoy Sanremo');
   const [whatsappNumber, setWhatsappNumber] = useState('393896382394');
+  const [localRestaurantName, setLocalRestaurantName] = useState(restaurantName);
 
-  // ==================== STATI MARKETING ====================
-  const [radarTier, setRadarTier] = useState('base');
-  const [stats, setStats] = useState({
-    totalOrders: 156, newCustomers: 23, returningCustomers: 45,
-    percentNew: 34, avgOrderValue: 18.50, savedAmount: 1840
+  // ==================== STATI STATISTICHE SETTIMANALI ====================
+  const [weeklyStats, setWeeklyStats] = useState({
+    ordersCount: 0,
+    totalAmount: 0,
+    totaleFee: 0,
+    feePerOrdine: 1.20,
+    periodStart: null,
+    periodEnd: null,
+    loading: true
   });
-  const [firstOrderDiscount, setFirstOrderDiscount] = useState({
-    enabled: false, type: 'euro', value: 2, minOrder: 15
-  });
-  const [nominativeDiscounts, setNominativeDiscounts] = useState([]);
-  const [newNominativeDiscount, setNewNominativeDiscount] = useState({
-    type: 'euro', value: 2, customerSearch: '', selectedCustomer: null
-  });
-  const [customerSearchResults, setCustomerSearchResults] = useState([]);
 
-  // Mock clienti
-  const mockCustomers = [
-    { id: 1, name: 'Marco Bianchi', phone: '3331234567', orders: 12 },
-    { id: 2, name: 'Sara Moretti', phone: '3339876543', orders: 8 },
-    { id: 3, name: 'Luca Parisi', phone: '3345678901', orders: 6 },
-    { id: 4, name: 'Giulia Ferri', phone: '3356789012', orders: 5 },
-    { id: 5, name: 'Andrea Costa', phone: '3367890123', orders: 4 },
-  ];
+  // ==================== STATI POPUP UPGRADE ====================
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false);
+  const [selectedUpgradePlan, setSelectedUpgradePlan] = useState(null);
+  const [si1_Lettura, setSi1_Lettura] = useState(false);
+  const [si2_Accettazione, setSi2_Accettazione] = useState(false);
+  const [si3_Consapevolezza, setSi3_Consapevolezza] = useState(false);
+  const [signatureName, setSignatureName] = useState('');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
 
-  // ==================== NOTIFICATION (FIX ChatGPT - cleanup timer) ====================
+  // ==================== HANDLERS ====================
   const showNotification = useCallback(() => {
-    setShowSaveNotification(true);
     if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+    setShowSaveNotification(true);
     notifTimerRef.current = setTimeout(() => setShowSaveNotification(false), 3000);
   }, []);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
-    };
-  }, []);
-
-  // ==================== LOAD ORDERS (FIX ChatGPT - race-safe) ====================
   const loadOrders = useCallback(async (date) => {
     const reqId = ++ordersReqIdRef.current;
     setOrdersLoading(true);
-
     try {
-      const result = await api.getOrders(restaurantSlug, date);
-      if (reqId !== ordersReqIdRef.current) return;
-      if (result.success) setOrders(result.orders || []);
-      else setOrders([]);
-    } catch (e) {
-      if (reqId !== ordersReqIdRef.current) return;
-      setOrders([]);
-      console.error('loadOrders failed', e);
+      const data = await api.getOrders(date || selectedDate);
+      if (reqId === ordersReqIdRef.current && data?.orders) {
+        setOrders(data.orders);
+      }
+    } catch (error) {
+      console.error('Errore caricamento ordini:', error);
     } finally {
       if (reqId === ordersReqIdRef.current) setOrdersLoading(false);
     }
-  }, [api, restaurantSlug]);
+  }, [api, selectedDate]);
 
-  // ==================== BOOTSTRAP (FIX ChatGPT - try/catch/finally) ====================
-  useEffect(() => {
-    const loadInitialData = async () => {
-      setLoading(true);
-      try {
-        const isConnected = await api.testConnection();
-        setConnectionStatus(isConnected ? 'connected' : 'error');
-        
-        if (!isConnected) {
-          setLoading(false);
-          return;
-        }
+  const loadWeeklyStats = useCallback(async () => {
+    try {
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() + diffToMonday);
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
 
-        const settingsResult = await api.getSettings(restaurantSlug);
-        if (settingsResult?.success) {
-          const r = settingsResult.restaurant;
-          if (r?.name) setRestaurantName(r.name);
-          if (r?.whatsapp_number) setWhatsappNumber(r.whatsapp_number);
-          
-          const s = r?.settings;
-          if (s) {
-            if (s.delivery_locations) setLocations(s.delivery_locations);
-            if (s.poke_sizes) setPokeSizes(s.poke_sizes);
-            if (s.extra_prices) setExtraPrices(s.extra_prices);
-            if (s.floor_delivery) setFloorDelivery(s.floor_delivery);
-            if (s.rider_tip !== undefined) setRiderTip(s.rider_tip);
-            if (s.current_plan) setCurrentPlan(s.current_plan);
-            if (s.credits !== undefined) setCredits(s.credits);
-            if (s.radar_tier) setRadarTier(s.radar_tier);
-            if (s.first_order_discount) setFirstOrderDiscount(s.first_order_discount);
-            if (s.nominative_discounts) setNominativeDiscounts(s.nominative_discounts);
-          }
-        }
+      // Per ora usiamo dati mock - da collegare all'API
+      const pianoAttivo = PIANI_TARIFFARI[planId] || PIANI_TARIFFARI.freedom_150;
+      const ordersCount = orders.length;
+      const feePerOrdine = pianoAttivo.costoPerOrdine;
+      const totaleFee = ordersCount * feePerOrdine;
 
-        await loadOrders(new Date().toISOString().split('T')[0]);
-      } catch (e) {
-        console.error('init failed', e);
-        setConnectionStatus('error');
-      } finally {
-        setLoading(false);
-      }
-    };
+      setWeeklyStats({
+        ordersCount,
+        totalAmount: orders.reduce((sum, o) => sum + toNumber(o.total_amount || o.total, 0), 0),
+        totaleFee,
+        feePerOrdine,
+        periodStart: startOfWeek,
+        periodEnd: endOfWeek,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Errore statistiche:', error);
+      setWeeklyStats(prev => ({ ...prev, loading: false }));
+    }
+  }, [orders, planId]);
 
-    loadInitialData();
-  }, [api, restaurantSlug, loadOrders]);
-
-  // Effect per cambio data
-  useEffect(() => {
-    if (!loading) loadOrders(selectedDate);
-  }, [selectedDate, loading, loadOrders]);
-
-  // ==================== FUNZIONI ORDINI ====================
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      const result = await api.updateOrderStatus(restaurantSlug, orderId, newStatus);
-      if (result.success) {
-        showNotification();
-        loadOrders(selectedDate);
-      }
-    } catch (e) {
-      console.error('updateOrderStatus failed', e);
+      await api.updateOrderStatus(orderId, newStatus);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+      showNotification();
+    } catch (error) {
+      console.error('Errore aggiornamento stato:', error);
+      alert('Errore aggiornamento stato ordine');
     }
   };
 
-  const advanceOrderStatus = (order) => {
-    const currentStatus = ORDER_STATUSES[order.status];
-    if (currentStatus?.next) updateOrderStatus(order.id, currentStatus.next);
+  const saveAllConfigurations = async () => {
+    setLoading(true);
+    try {
+      const config = {
+        settings: {
+          delivery_locations: locations,
+          poke_sizes: pokeSizes,
+          extra_prices: extraPrices,
+          floor_delivery: floorDelivery,
+          rider_tip: riderTip,
+          whatsapp_number: whatsappNumber,
+          restaurant_name: localRestaurantName
+        }
+      };
+      await api.saveSettings(config);
+      showNotification();
+    } catch (error) {
+      console.error('Errore salvataggio:', error);
+      alert('Errore nel salvataggio');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ==================== FUNZIONI LOCALITÀ ====================
+  const handleUpgrade = async () => {
+    if (!selectedUpgradePlan) return;
+    setUpgradeLoading(true);
+    try {
+      // Salva firma contratto
+      await api.signContract({
+        plan_id: selectedUpgradePlan.id,
+        signature_name: signatureName,
+        si1_lettura: si1_Lettura,
+        si2_accettazione: si2_Accettazione,
+        si3_consapevolezza: si3_Consapevolezza
+      });
+
+      // Crea checkout Stripe
+      const { url } = await api.createCheckout({
+        plan_id: selectedUpgradePlan.id,
+        success_url: window.location.href,
+        cancel_url: window.location.href
+      });
+
+      if (url) window.location.href = url;
+    } catch (error) {
+      console.error('Errore upgrade:', error);
+      alert('Errore durante il processo. Riprova.');
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
+  const updateGeneric = (setter, id, field, value) => {
+    setter(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
+    showNotification();
+  };
+
   const addLocation = () => {
     if (newLocation.name && newLocation.fee && newLocation.estimatedTime) {
-      const id = `loc-${Date.now()}`;
+      const id = newLocation.name.toLowerCase().replace(/\s+/g, '-');
       setLocations([...locations, { 
         id, 
         name: newLocation.name, 
-        fee: toNumber(newLocation.fee, 0), 
+        fee: parseFloat(newLocation.fee), 
         estimatedTime: newLocation.estimatedTime, 
         active: true 
       }]);
@@ -413,15 +396,11 @@ function AdminPanel() {
     }
   };
 
-  const updateLocation = (id, updates) => {
-    setLocations(locations.map(loc => loc.id === id ? { ...loc, ...updates } : loc));
-    setEditingLocation(null);
-    showNotification();
-  };
-
   const deleteLocation = (id) => {
-    setLocations(locations.filter(loc => loc.id !== id));
-    showNotification();
+    if (window.confirm('Eliminare questa località?')) {
+      setLocations(locations.filter(loc => loc.id !== id));
+      showNotification();
+    }
   };
 
   const toggleLocationActive = (id) => {
@@ -429,132 +408,24 @@ function AdminPanel() {
     showNotification();
   };
 
-  // ==================== FUNZIONI PREZZI (FIX ChatGPT - toNumber) ====================
   const updatePokeSize = (id, field, value) => {
-    setPokeSizes(prev => prev.map(size => 
-      size.id === id ? { ...size, [field]: toNumber(value, size[field] ?? 0) } : size
-    ));
+    setPokeSizes(pokeSizes.map(s => s.id === id ? { ...s, [field]: parseFloat(value) } : s));
     showNotification();
   };
 
   const updateExtraPrice = (field, value) => {
-    setExtraPrices(prev => ({ ...prev, [field]: toNumber(value, prev[field] ?? 0) }));
+    setExtraPrices({ ...extraPrices, [field]: parseFloat(value) });
     showNotification();
   };
 
-  const updateFloorDelivery = (field, value) => {
-    setFloorDelivery(prev => ({ 
-      ...prev, 
-      [field]: field === 'fee' ? toNumber(value, prev.fee ?? 0) : value 
-    }));
-    showNotification();
-  };
-
-  // ==================== FUNZIONI ABBONAMENTO ====================
-  const openContractModal = (planId) => {
-    setSelectedPlanForUpgrade(planId);
-    setContractStep(0);
-    setShowContractModal(true);
-  };
-
-  const handleContractStep = () => {
-    if (contractStep < 2) {
-      setContractStep(contractStep + 1);
-    } else {
-      setCurrentPlan(selectedPlanForUpgrade);
-      if (selectedPlanForUpgrade === 'lampo_500') setCredits(500);
-      setShowContractModal(false);
-      setContractStep(0);
-      showNotification();
+  const renderBowlIcon = (sizeId) => {
+    const iconClass = "text-[#608beb]";
+    switch (sizeId) {
+      case 'small': return <Icons.BowlS className={`w-8 h-8 ${iconClass}`} />;
+      case 'medium': return <Icons.BowlM className={`w-10 h-10 ${iconClass}`} />;
+      case 'large': return <Icons.BowlL className={`w-12 h-12 ${iconClass}`} />;
+      default: return <Icons.BowlM className={`w-10 h-10 ${iconClass}`} />;
     }
-  };
-
-  // ==================== FUNZIONI MARKETING ====================
-  const calculateDiscountProjection = (percent, minOrder) => {
-    return (toNumber(percent, 0) / 100 * toNumber(minOrder, 0)).toFixed(2);
-  };
-
-  const searchCustomers = (query) => {
-    if (query.length < 2) {
-      setCustomerSearchResults([]);
-      return;
-    }
-    const results = mockCustomers.filter(c => 
-      c.name.toLowerCase().includes(query.toLowerCase()) || c.phone.includes(query)
-    );
-    setCustomerSearchResults(results);
-  };
-
-  const addNominativeDiscount = () => {
-    if (!newNominativeDiscount.selectedCustomer) return;
-    
-    const newDiscount = {
-      id: Date.now(),
-      customer: newNominativeDiscount.selectedCustomer,
-      type: newNominativeDiscount.type,
-      value: toNumber(newNominativeDiscount.value, 0),
-      active: true,
-      createdAt: new Date().toISOString()
-    };
-    
-    setNominativeDiscounts([...nominativeDiscounts, newDiscount]);
-    setNewNominativeDiscount({ type: 'euro', value: 2, customerSearch: '', selectedCustomer: null });
-    setCustomerSearchResults([]);
-    showNotification();
-  };
-
-  const toggleNominativeDiscount = (id) => {
-    setNominativeDiscounts(nominativeDiscounts.map(d => d.id === id ? { ...d, active: !d.active } : d));
-    showNotification();
-  };
-
-  const deleteNominativeDiscount = (id) => {
-    setNominativeDiscounts(nominativeDiscounts.filter(d => d.id !== id));
-    showNotification();
-  };
-
-  // ==================== SALVATAGGIO ====================
-  const saveAllConfigurations = async () => {
-    setLoading(true);
-    
-    try {
-      const settings = {
-        delivery_locations: locations,
-        poke_sizes: pokeSizes,
-        extra_prices: extraPrices,
-        floor_delivery: floorDelivery,
-        rider_tip: riderTip,
-        current_plan: currentPlan,
-        credits: credits,
-        radar_tier: radarTier,
-        first_order_discount: firstOrderDiscount,
-        nominative_discounts: nominativeDiscounts,
-        last_updated: new Date().toISOString()
-      };
-
-      const result = await api.saveSettings(restaurantSlug, {
-        name: restaurantName,
-        whatsapp_number: whatsappNumber,
-        settings: settings
-      });
-      
-      if (result.success) showNotification();
-    } catch (e) {
-      console.error('saveAllConfigurations failed', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ==================== HELPERS ====================
-  const getPlanBadge = () => {
-    const plan = PRICING_PLANS[currentPlan];
-    if (!plan) return null;
-    return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r ${plan.color} ${plan.border} border`}>
-        {plan.emoji} {plan.name}
-      </span>
-    );
   };
 
   const formatDate = (dateString) => {
@@ -562,13 +433,46 @@ function AdminPanel() {
     return new Date(dateString).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
   };
 
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const isConnected = await api.testConnection();
+        setConnectionStatus(isConnected ? 'connected' : 'error');
+        
+        if (isConnected) {
+          await loadOrders(selectedDate);
+        }
+      } catch (error) {
+        console.error('Init error:', error);
+        setConnectionStatus('error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+    
+    return () => {
+      if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    loadWeeklyStats();
+  }, [orders, planId]);
+
+  useEffect(() => {
+    if (selectedDate) loadOrders(selectedDate);
+  }, [selectedDate]);
+
   // ==================== LOADING SCREEN ====================
   if (loading && connectionStatus === 'checking') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className={`min-h-screen ${BG_TUTTO} flex items-center justify-center`}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Caricamento...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb] mx-auto mb-4"></div>
+          <p className={`${TEXT_PRIMARY} font-medium`}>Caricamento...</p>
         </div>
       </div>
     );
@@ -576,176 +480,212 @@ function AdminPanel() {
 
   // ==================== RENDER ====================
   return (
-    <div className="min-h-screen bg-[#F8FAFC] py-8 px-4">
-      <div className="max-w-6xl mx-auto">
+    <div className={`min-h-screen ${BG_TUTTO} py-8 px-4 relative overflow-hidden font-sans`}>
+      <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className={`${BG_TUTTO} rounded-2xl shadow-2xl p-8 mb-8 border ${BORDER_BLU}`}>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2 flex-wrap">
-                <h1 className="text-2xl md:text-3xl font-black text-slate-800">
-                  ORDINI<span className="text-green-600">LAMPO</span>
+                <h1 className={`text-3xl font-bold ${TEXT_PRIMARY}`}>
+                  ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
                 </h1>
-                {getPlanBadge()}
-                {radarTier === 'full' && (
-                  <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full font-bold">RAD FULL</span>
+                <span className={`px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r ${PIANI_TARIFFARI[planId]?.colore || 'from-emerald-500 to-teal-600'} text-white shadow-lg`}>
+                  {PIANI_TARIFFARI[planId]?.nomeBadge || 'FREEDOM'}
+                </span>
+                {unreadCount > 0 && (
+                  <span className="relative inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white font-bold shadow-lg animate-pulse">
+                    🔔 {unreadCount} {unreadCount === 1 ? 'nuovo' : 'nuovi'}
+                  </span>
                 )}
               </div>
-              <p className="text-gray-600">{restaurantName}</p>
-              <div className="mt-2 flex items-center gap-4 flex-wrap">
-                {connectionStatus === 'connected' ? (
-                  <span className="text-green-600 text-sm flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></span>
-                    Connesso
-                  </span>
-                ) : (
-                  <span className="text-red-600 text-sm flex items-center gap-1">
-                    <span className="w-2 h-2 bg-red-600 rounded-full"></span>
-                    Errore connessione
-                  </span>
-                )}
-                {currentPlan === 'lampo_500' && credits > 0 && (
-                  <span className="text-blue-600 text-sm font-semibold">💳 {credits} crediti</span>
-                )}
-                <span className="text-gray-500 text-sm">👤 {user?.primaryEmailAddress?.emailAddress}</span>
+              <p className={`${TEXT_SECONDARY} font-medium`}>{localRestaurantName}</p>
+              <div className="flex items-center gap-4 mt-2">
+                <span className={`flex items-center gap-2 text-sm ${connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></span>
+                  {connectionStatus === 'connected' ? 'Connesso' : 'Errore Connessione'}
+                </span>
+                <span className={`text-sm ${TEXT_SECONDARY}`}>👤 {user?.primaryEmailAddress?.emailAddress}</span>
               </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={saveAllConfigurations}
                 disabled={loading}
-                className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 active:scale-95"
+                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-2 shadow-xl shadow-green-500/30 transition-all disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
-                <span>Salva</span>
+                <span>Salva Modifiche</span>
               </button>
               <button
                 onClick={() => signOut()}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-4 rounded-xl flex items-center gap-2 transition-all"
+                className={`${BG_TUTTO} border ${BORDER_BLU} p-4 rounded-xl hover:bg-red-900/30 transition-colors`}
+                title="Logout"
               >
-                <LogOut className="w-5 h-5" />
+                <LogOut className="w-5 h-5 text-red-400" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* NOTIFICATION */}
+        {/* Notifica Salvataggio */}
         {showSaveNotification && (
-          <div className="fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-2 z-50 animate-bounce">
-            <CheckCircle className="w-5 h-5" />
-            <span className="font-semibold">Salvato!</span>
+          <div className="fixed top-8 right-8 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border border-[#608beb] animate-bounce">
+            <Icons.RedEnvelope className="w-10 h-10" />
+            <div>
+              <p className="font-bold text-lg">Salvato con successo!</p>
+              <p className="text-sm text-red-100">好运 (Buona Fortuna)</p>
+            </div>
           </div>
         )}
 
         {/* TABS */}
-        <div className="bg-white rounded-2xl shadow-lg mb-6 overflow-hidden">
-          <div className="flex border-b overflow-x-auto">
+        <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
+          <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#212121]">
             {[
-              { id: 'orders', icon: <ShoppingBag className="w-5 h-5" />, label: 'Ordini', count: orders.length },
-              { id: 'marketing', icon: <TrendingUp className="w-5 h-5" />, label: 'Marketing', accent: true },
-              { id: 'locations', icon: <MapPin className="w-5 h-5" />, label: 'Località' },
-              { id: 'prices', icon: <DollarSign className="w-5 h-5" />, label: 'Prezzi' },
-              { id: 'subscription', icon: <CreditCard className="w-5 h-5" />, label: 'Tariffe' },
-              { id: 'settings', icon: <Settings className="w-5 h-5" />, label: 'Impostazioni' },
+              { id: 'orders', label: 'Ordini', icon: ShoppingBag, count: orders.length },
+              { id: 'locations', label: 'Località', icon: MapPin },
+              { id: 'prices', label: 'Prezzi', icon: DollarSign },
+              { id: 'subscription', label: 'Tariffe', icon: CreditCard },
+              { id: 'settings', label: 'Impostazioni', icon: Settings }
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-max px-4 py-4 font-semibold flex items-center justify-center gap-2 transition-all ${
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  if (tab.id === 'orders') setUnreadCount(0);
+                }}
+                className={`flex-1 py-4 px-6 font-bold flex items-center justify-center gap-2 transition-all border-r border-[#608beb]/20 last:border-r-0 min-w-max ${
                   activeTab === tab.id 
-                    ? tab.accent 
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' 
-                    : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg' 
+                    : `${TEXT_SECONDARY} hover:bg-[#2a2a2a]`
                 }`}
               >
-                {tab.icon}
+                <tab.icon className="w-5 h-5" />
                 <span className="hidden sm:inline">{tab.label}</span>
-                {tab.count !== undefined && (
+                {tab.count !== undefined && tab.count > 0 && (
                   <span className="bg-white/20 px-2 py-0.5 rounded-full text-sm">{tab.count}</span>
                 )}
               </button>
             ))}
           </div>
 
-          <div className="p-6">
+          <div className="p-8">
             
             {/* ==================== TAB ORDINI ==================== */}
             {activeTab === 'orders' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <h2 className="text-2xl font-bold text-gray-800">📦 Ordini</h2>
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                  <h2 className={`text-2xl font-bold ${TEXT_PRIMARY}`}>📦 Ordini del Giorno</h2>
                   <div className="flex items-center gap-3">
                     <input 
                       type="date" 
                       value={selectedDate} 
                       onChange={(e) => setSelectedDate(e.target.value)} 
-                      className="border-2 border-gray-200 rounded-xl px-4 py-2 focus:border-blue-500 outline-none" 
+                      className={`${BG_TUTTO} border-2 ${BORDER_BLU} rounded-xl px-4 py-2 ${TEXT_PRIMARY} focus:outline-none`}
                     />
                     <button 
                       onClick={() => loadOrders(selectedDate)} 
                       disabled={ordersLoading}
-                      className="bg-blue-600 text-white p-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors min-w-11 min-h-11"
+                      className="bg-[#608beb] text-white p-3 rounded-xl hover:bg-[#4a7bd9] disabled:opacity-50 transition-colors"
                     >
                       <RefreshCw className={`w-5 h-5 ${ordersLoading ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
                 </div>
 
-                {orders.length === 0 ? (
-                  <div className="text-center py-16 bg-gray-50 rounded-2xl">
-                    <ShoppingBag className="w-20 h-20 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-500 text-lg">Nessun ordine per {formatDate(selectedDate)}</p>
+                {ordersLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb] mx-auto mb-4"></div>
+                    <p className={`${TEXT_PRIMARY} font-medium`}>Caricamento ordini...</p>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className={`${BG_TUTTO} rounded-2xl p-12 text-center border ${BORDER_BLU}`}>
+                    <ShoppingBag className="w-20 h-20 text-gray-600 mx-auto mb-4" />
+                    <p className={`${TEXT_PRIMARY} text-xl font-bold`}>Nessun ordine per {formatDate(selectedDate)}</p>
+                    <p className={`${TEXT_SECONDARY} text-sm mt-2`}>Gli ordini appariranno qui quando i clienti ordinano</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {orders.map(order => {
                       const statusInfo = ORDER_STATUSES[order.status] || ORDER_STATUSES.PENDING;
                       return (
-                        <div key={order.id} className="bg-gray-50 rounded-xl p-5 border-2 border-gray-100 hover:border-blue-200 transition-all">
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                                <span className="text-xl font-black text-gray-800">#{order.order_number}</span>
-                                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusInfo.color}`}>
-                                  {statusInfo.label}
-                                </span>
-                                <span className="text-gray-500">🕐 {order.scheduled_time?.substring(0, 5) || '-'}</span>
+                        <div key={order.id} className={`${BG_TUTTO} rounded-2xl border ${BORDER_BLU} overflow-hidden hover:shadow-xl transition-all`}>
+                          <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-4 w-full md:w-auto">
+                              <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
+                                order.order_type === 'delivery' ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-[#608beb] to-[#4a7bd9]'
+                              }`}>
+                                {order.order_type === 'delivery' ? '🛵' : '🥡'}
                               </div>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                                <p className="text-gray-600"><strong>👤</strong> {order.customer_name}</p>
-                                <p className="text-gray-600"><strong>📱</strong> {order.customer_phone}</p>
-                                <p className="text-gray-600"><strong>💰</strong> €{toNumber(order.total, 0).toFixed(2)}</p>
-                                {order.delivery_address && (
-                                  <p className="text-gray-600"><strong>📍</strong> {order.delivery_address}</p>
-                                )}
+                              <div>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>#{order.order_number || order.id?.slice(0, 8)}</h3>
+                                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusInfo.color}`}>
+                                    {statusInfo.label}
+                                  </span>
+                                </div>
+                                <p className={`text-sm ${TEXT_SECONDARY}`}>
+                                  {order.customer_name || 'Cliente'} • {order.scheduled_time?.substring(0, 5) || '-'}
+                                </p>
                               </div>
-                              {order.notes && (
-                                <p className="text-gray-500 text-sm mt-3 bg-yellow-50 p-3 rounded-lg">📝 {order.notes}</p>
-                              )}
                             </div>
-                            <div className="flex flex-col gap-2">
+                            
+                            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                              <div className="text-right mr-2">
+                                <p className="font-black text-2xl text-green-400">
+                                  €{toNumber(order.total_amount || order.total, 0).toFixed(2)}
+                                </p>
+                              </div>
+                              
                               {statusInfo.next && (
-                                <button 
-                                  onClick={() => advanceOrderStatus(order)}
-                                  className="bg-green-600 text-white px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-green-700 text-sm font-semibold transition-colors min-h-11"
+                                <button
+                                  onClick={() => updateOrderStatus(order.id, statusInfo.next)}
+                                  className="bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white px-4 py-3 rounded-xl font-bold hover:opacity-90 transition-all"
                                 >
-                                  <CheckCircle className="w-4 h-4" />
-                                  {ORDER_STATUSES[statusInfo.next]?.label}
+                                  Avanza →
                                 </button>
                               )}
-                              {order.status === 'PENDING' && (
-                                <button 
-                                  onClick={() => updateOrderStatus(order.id, 'CANCELLED')}
-                                  className="bg-red-100 text-red-600 px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-red-200 text-sm font-semibold transition-colors min-h-11"
+                              
+                              {order.customer_phone && (
+                                <a
+                                  href={`tel:${order.customer_phone}`}
+                                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 rounded-xl hover:opacity-90 transition-all"
                                 >
-                                  <XCircle className="w-4 h-4" />
-                                  Annulla
-                                </button>
+                                  <Phone className="w-5 h-5" />
+                                </a>
                               )}
+                              
+                              <button
+                                onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+                                className={`${BG_TUTTO} border ${BORDER_BLU} p-3 rounded-xl hover:bg-[#2a2a2a] transition-colors`}
+                              >
+                                {expandedOrderId === order.id ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                              </button>
                             </div>
                           </div>
+
+                          {expandedOrderId === order.id && (
+                            <div className={`p-6 border-t border-[#608beb]/30 bg-[#1a1a1a]`}>
+                              <div className="grid md:grid-cols-2 gap-6">
+                                <div>
+                                  <h4 className={`font-bold ${TEXT_SECONDARY} mb-2 uppercase text-xs`}>Dati Cliente</h4>
+                                  <p className={`font-bold text-lg ${TEXT_PRIMARY}`}>{order.customer_name || 'N/A'}</p>
+                                  <p className={`${TEXT_SECONDARY} flex items-center gap-2`}>
+                                    <Phone className="w-4 h-4" /> {order.customer_phone || 'N/A'}
+                                  </p>
+                                  {order.delivery_address && (
+                                    <p className={`${TEXT_SECONDARY} mt-2`}>📍 {order.delivery_address}</p>
+                                  )}
+                                </div>
+                                <div>
+                                  <h4 className={`font-bold ${TEXT_SECONDARY} mb-2 uppercase text-xs`}>Note</h4>
+                                  <p className={`${TEXT_SECONDARY}`}>{order.notes || order.customer_notes_order || 'Nessuna nota'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -754,463 +694,85 @@ function AdminPanel() {
               </div>
             )}
 
-            {/* ==================== TAB MARKETING ==================== */}
-            {activeTab === 'marketing' && (
-              <div className="space-y-8">
-                
-                {/* HERO BOX RISPARMIO (Design Gemini - Dark Mode) */}
-                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-2xl border border-slate-700">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <TrendingUp className="w-32 h-32 text-white" />
-                  </div>
-                  
-                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                      <p className="text-green-400 font-bold uppercase tracking-widest text-xs mb-2 flex items-center gap-2">
-                        <Sparkles className="w-4 h-4" /> Il Tuo Margine Preservato
-                      </p>
-                      <h2 className="text-5xl md:text-6xl font-black text-white">
-                        €{stats.savedAmount.toLocaleString('it-IT')}
-                      </h2>
-                      <p className="text-slate-400 mt-3 font-medium max-w-md">
-                        Questo importo sarebbe finito in commissioni ai servizi di intermediazione. 
-                        <span className="text-white font-semibold"> Ora resta nel tuo cassetto.</span>
-                      </p>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                        <p className="text-slate-400 text-xs font-bold uppercase">Ordini</p>
-                        <p className="text-white text-2xl font-black">{stats.totalOrders}</p>
-                      </div>
-                      <div className="bg-green-500/20 backdrop-blur-md p-4 rounded-2xl border border-green-500/20">
-                        <p className="text-green-400 text-xs font-bold uppercase">Risparmio</p>
-                        <p className="text-green-400 text-2xl font-black">~28%</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* STATISTICHE */}
-                <div className="bg-white rounded-xl border-2 border-gray-100 overflow-hidden">
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
-                    <h3 className="text-xl font-bold text-gray-800">📈 Statistiche Clienti</h3>
-                    {radarTier === 'base' ? (
-                      <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">RAD BASE</span>
-                    ) : (
-                      <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full font-semibold">RAD FULL</span>
-                    )}
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 text-center">
-                        <p className="text-blue-600 text-sm font-medium mb-1">Ordini questo mese</p>
-                        <p className="text-4xl font-black text-blue-700">{stats.totalOrders}</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-5 text-center">
-                        <p className="text-green-600 text-sm font-medium mb-1">Nuovi clienti</p>
-                        <p className="text-4xl font-black text-green-700">{stats.newCustomers}</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 text-center">
-                        <p className="text-purple-600 text-sm font-medium mb-1">Clienti di ritorno</p>
-                        <p className="text-4xl font-black text-purple-700">{stats.returningCustomers}</p>
-                      </div>
-                    </div>
-
-                    {/* STATS FULL - Bloccate se BASE */}
-                    {radarTier === 'base' ? (
-                      <div className="relative">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 opacity-30 blur-sm select-none pointer-events-none">
-                          <div className="bg-gray-100 rounded-xl p-5 text-center">
-                            <p className="text-gray-500 text-sm">% Nuovi vs Ritorno</p>
-                            <p className="text-3xl font-bold text-gray-400">34%</p>
-                          </div>
-                          <div className="bg-gray-100 rounded-xl p-5 text-center">
-                            <p className="text-gray-500 text-sm">Valore medio ordine</p>
-                            <p className="text-3xl font-bold text-gray-400">€18.50</p>
-                          </div>
-                          <div className="bg-gray-100 rounded-xl p-5 text-center">
-                            <p className="text-gray-500 text-sm">Trend settimanale</p>
-                            <p className="text-3xl font-bold text-gray-400">+12%</p>
-                          </div>
-                        </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-4 shadow-xl">
-                            <Lock className="w-8 h-8" />
-                          </div>
-                          <button 
-                            onClick={() => setRadarTier('full')}
-                            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
-                          >
-                            🚀 Sblocca con RAD FULL (+€0.09/ordine)
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-5 text-center">
-                          <p className="text-orange-600 text-sm font-medium mb-1">% Nuovi vs Ritorno</p>
-                          <p className="text-4xl font-black text-orange-700">{stats.percentNew}%</p>
-                        </div>
-                        <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-5 text-center">
-                          <p className="text-teal-600 text-sm font-medium mb-1">Valore medio ordine</p>
-                          <p className="text-4xl font-black text-teal-700">€{toNumber(stats.avgOrderValue, 0).toFixed(2)}</p>
-                        </div>
-                        <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-5 text-center">
-                          <p className="text-pink-600 text-sm font-medium mb-1">Trend settimanale</p>
-                          <p className="text-4xl font-black text-pink-700">+12%</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* SCONTO PRIMO ORDINE */}
-                <div className="bg-white rounded-xl border-2 border-gray-100 overflow-hidden">
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <h3 className="text-xl font-bold text-gray-800">🎁 Sconto Primo Ordine</h3>
-                    <Toggle 
-                      enabled={firstOrderDiscount.enabled}
-                      onChange={(val) => setFirstOrderDiscount({...firstOrderDiscount, enabled: val})}
-                      label="Attiva sconto primo ordine"
-                    />
-                  </div>
-                  
-                  <div className={`p-6 transition-all duration-300 ${!firstOrderDiscount.enabled ? 'opacity-40 pointer-events-none' : ''}`}>
-                    <p className="text-gray-600 mb-6">Attira nuovi clienti con uno sconto automatico al primo ordine.</p>
-                    
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                      <div className="space-y-6">
-                        <div>
-                          <label className="block text-xs font-black text-gray-400 uppercase tracking-tighter mb-3">Ordine minimo</label>
-                          <div className="flex items-center gap-2">
-                            <span className="text-gray-500 text-lg">€</span>
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.50"
-                              value={firstOrderDiscount.minOrder}
-                              onChange={(e) => setFirstOrderDiscount({
-                                ...firstOrderDiscount, 
-                                minOrder: toNumber(e.target.value, 0)
-                              })}
-                              className="w-28 border-2 border-gray-200 rounded-xl px-4 py-3 text-xl font-bold text-center focus:border-green-500 outline-none transition-all"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-black text-gray-400 uppercase tracking-tighter mb-3">Tipo sconto</label>
-                          <TypeSelector 
-                            type={firstOrderDiscount.type}
-                            onChange={(val) => setFirstOrderDiscount({...firstOrderDiscount, type: val})}
+            {/* ==================== TAB LOCALITÀ ==================== */}
+            {activeTab === 'locations' && (
+              <div className="space-y-4">
+                <h2 className={`text-2xl font-bold ${TEXT_PRIMARY} mb-6`}>📍 Zone Consegna</h2>
+                {locations.map(loc => (
+                  <div
+                    key={loc.id}
+                    className={`${BG_TUTTO} p-6 rounded-2xl flex items-center justify-between border shadow-lg transition-all hover:shadow-xl ${
+                      !loc.active ? 'opacity-60 border-dashed border-gray-600' : `${BORDER_BLU} shadow-[#608beb]/10`
+                    }`}
+                  >
+                    <div className="flex-1">
+                      {editingLocation === loc.id ? (
+                        <div className="flex gap-2 flex-wrap">
+                          <input
+                            className={`border ${BORDER_BLU} p-3 rounded-xl w-32 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                            defaultValue={loc.name}
+                            onBlur={(e) => updateGeneric(setLocations, loc.id, 'name', e.target.value)}
                           />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-black text-gray-400 uppercase tracking-tighter mb-3">Valore sconto</label>
-                          <ValueSelector
-                            value={firstOrderDiscount.value}
-                            type={firstOrderDiscount.type}
-                            onChange={(val) => setFirstOrderDiscount({...firstOrderDiscount, value: val})}
-                            step={firstOrderDiscount.type === 'euro' ? 0.5 : 5}
-                            min={firstOrderDiscount.type === 'euro' ? 0.5 : 5}
-                            max={firstOrderDiscount.type === 'euro' ? 20 : 50}
+                          <input
+                            className={`border ${BORDER_BLU} p-3 rounded-xl w-24 font-bold text-center ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                            type="number"
+                            step="0.50"
+                            defaultValue={loc.fee}
+                            onBlur={(e) => updateGeneric(setLocations, loc.id, 'fee', parseFloat(e.target.value))}
                           />
-                        </div>
-                      </div>
-
-                      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
-                        <h4 className="font-bold text-green-800 mb-4">👁️ Anteprima</h4>
-                        
-                        <div className="bg-white rounded-xl p-6 shadow-sm border border-green-100">
-                          <div className="text-center">
-                            <span className="text-5xl">🎉</span>
-                            <p className="text-xl font-bold text-gray-800 mt-3">Benvenuto!</p>
-                            <p className="text-green-600 font-bold text-2xl mt-2">
-                              {firstOrderDiscount.type === 'euro' 
-                                ? `€${toNumber(firstOrderDiscount.value, 0).toFixed(2)} di sconto`
-                                : `${toNumber(firstOrderDiscount.value, 0)}% di sconto`
-                              }
-                            </p>
-                            <p className="text-gray-500 mt-2">
-                              sul tuo primo ordine
-                              {firstOrderDiscount.minOrder > 0 && ` (min. €${toNumber(firstOrderDiscount.minOrder, 0).toFixed(2)})`}
-                            </p>
-                          </div>
-                        </div>
-
-                        {firstOrderDiscount.type === 'percent' && firstOrderDiscount.minOrder > 0 && (
-                          <div className="mt-4 bg-blue-50 rounded-xl p-4 border border-blue-200">
-                            <p className="text-blue-800 text-sm">
-                              📊 Su ordine di €{toNumber(firstOrderDiscount.minOrder, 0).toFixed(2)} → sconto di <strong>€{calculateDiscountProjection(firstOrderDiscount.value, firstOrderDiscount.minOrder)}</strong>
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SCONTI NOMINATIVI */}
-                <div className="bg-white rounded-xl border-2 border-gray-100 overflow-hidden">
-                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-wrap gap-2">
-                    <h3 className="text-xl font-bold text-gray-800">🎯 Sconti Nominativi</h3>
-                    {radarTier === 'full' ? (
-                      <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-full font-semibold">RAD FULL</span>
-                    ) : (
-                      <span className="text-xs bg-gray-200 text-gray-600 px-3 py-1 rounded-full">🔒 Richiede RAD FULL</span>
-                    )}
-                  </div>
-
-                  {radarTier === 'base' ? (
-                    <div className="p-10 text-center">
-                      <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-                        <Lock className="w-8 h-8" />
-                      </div>
-                      <h4 className="text-xl font-bold text-gray-800">Funzione Premium</h4>
-                      <p className="text-gray-600 mt-2 max-w-md mx-auto">
-                        Con RAD FULL puoi creare sconti personalizzati per singoli clienti.
-                      </p>
-                      <button 
-                        onClick={() => setRadarTier('full')}
-                        className="mt-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
-                      >
-                        🚀 Attiva RAD FULL
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="p-6">
-                      <div className="bg-purple-50 rounded-xl p-6 mb-6 border-2 border-purple-200">
-                        <h4 className="font-bold text-purple-800 mb-4">➕ Nuovo sconto</h4>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                          <div className="md:col-span-2 relative">
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-tighter mb-2">Cerca cliente</label>
-                            <input
-                              type="text"
-                              value={newNominativeDiscount.customerSearch}
-                              onChange={(e) => {
-                                setNewNominativeDiscount({...newNominativeDiscount, customerSearch: e.target.value, selectedCustomer: null});
-                                searchCustomers(e.target.value);
-                              }}
-                              placeholder="Nome o telefono..."
-                              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:border-purple-500 outline-none transition-all"
-                            />
-                            
-                            {customerSearchResults.length > 0 && !newNominativeDiscount.selectedCustomer && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border-2 border-purple-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-                                {customerSearchResults.map(customer => (
-                                  <button
-                                    key={customer.id}
-                                    onClick={() => {
-                                      setNewNominativeDiscount({ ...newNominativeDiscount, selectedCustomer: customer, customerSearch: customer.name });
-                                      setCustomerSearchResults([]);
-                                    }}
-                                    className="w-full text-left px-4 py-3 hover:bg-purple-50 border-b border-gray-100 last:border-0 min-h-11"
-                                  >
-                                    <p className="font-semibold text-gray-800">{customer.name}</p>
-                                    <p className="text-sm text-gray-500">📱 {customer.phone} • {customer.orders} ordini</p>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-
-                            {newNominativeDiscount.selectedCustomer && (
-                              <div className="mt-2 bg-green-100 rounded-lg px-4 py-2 flex items-center justify-between">
-                                <span className="text-green-800 font-medium">✅ {newNominativeDiscount.selectedCustomer.name}</span>
-                                <button 
-                                  onClick={() => setNewNominativeDiscount({...newNominativeDiscount, selectedCustomer: null, customerSearch: ''})} 
-                                  className="text-green-600 hover:text-green-800 text-lg p-1 min-w-8 min-h-8"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-tighter mb-2">Tipo</label>
-                            <TypeSelector type={newNominativeDiscount.type} onChange={(val) => setNewNominativeDiscount({...newNominativeDiscount, type: val})} />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-black text-gray-400 uppercase tracking-tighter mb-2">Valore</label>
-                            <input
-                              type="number"
-                              min="0.5"
-                              step="0.5"
-                              value={newNominativeDiscount.value}
-                              onChange={(e) => setNewNominativeDiscount({...newNominativeDiscount, value: toNumber(e.target.value, 0)})}
-                              className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-lg font-bold text-center focus:border-purple-500 outline-none"
-                            />
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={addNominativeDiscount}
-                          disabled={!newNominativeDiscount.selectedCustomer}
-                          className="mt-4 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl transition-all min-h-11"
-                        >
-                          ➕ Crea Sconto
-                        </button>
-                      </div>
-
-                      {nominativeDiscounts.length > 0 ? (
-                        <div className="space-y-3">
-                          {nominativeDiscounts.map(discount => (
-                            <div key={discount.id} className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                                  <span className="text-purple-600 font-bold text-lg">{discount.customer.name.charAt(0)}</span>
-                                </div>
-                                <div>
-                                  <p className="font-semibold text-gray-800">{discount.customer.name}</p>
-                                  <p className="text-sm text-gray-500">
-                                    {discount.type === 'euro' ? `€${toNumber(discount.value, 0).toFixed(2)}` : `${toNumber(discount.value, 0)}%`} di sconto
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Toggle 
-                                  enabled={discount.active} 
-                                  onChange={() => toggleNominativeDiscount(discount.id)} 
-                                  size="sm" 
-                                  label={`Toggle sconto ${discount.customer.name}`}
-                                />
-                                <button 
-                                  onClick={() => deleteNominativeDiscount(discount.id)} 
-                                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors min-w-11 min-h-11"
-                                >
-                                  <Trash2 className="w-5 h-5" />
-                                </button>
-                              </div>
-                            </div>
-                          ))}
+                          <input
+                            className={`border ${BORDER_BLU} p-3 rounded-xl w-32 font-medium ${BG_TUTTO} ${TEXT_PRIMARY}`}
+                            defaultValue={loc.estimatedTime}
+                            onBlur={(e) => updateGeneric(setLocations, loc.id, 'estimatedTime', e.target.value)}
+                          />
                         </div>
                       ) : (
-                        <div className="text-center py-10 text-gray-500">
-                          <span className="text-5xl">🎯</span>
-                          <p className="mt-3 font-medium">Nessuno sconto nominativo</p>
+                        <div>
+                          <h3 className={`font-bold text-xl ${TEXT_PRIMARY}`}>{loc.name}</h3>
+                          <p className={`${TEXT_SECONDARY}`}>€{loc.fee.toFixed(2)} • {loc.estimatedTime}</p>
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-
-                {/* INFO BOX */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
-                  <div className="flex items-start gap-4">
-                    <span className="text-4xl">💡</span>
-                    <div>
-                      <h4 className="font-bold text-blue-900 mb-1">Lo sapevi?</h4>
-                      <p className="text-blue-800">
-                        Le piattaforme di intermediazione <strong>non ti mostrano chi sono i tuoi clienti</strong>.
-                        Con Ordini-Lampo <strong>i tuoi clienti sono tuoi</strong>: nomi, telefoni, preferenze.
-                      </p>
+                    <div className="flex gap-2">
+                      <button onClick={() => toggleLocationActive(loc.id)} className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU}`}>
+                        {loc.active ? <Eye className="w-5 h-5 text-green-500" /> : <EyeOff className="w-5 h-5 text-gray-500" />}
+                      </button>
+                      <button onClick={() => setEditingLocation(editingLocation === loc.id ? null : loc.id)} className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU}`}>
+                        <Edit2 className="w-5 h-5 text-blue-500" />
+                      </button>
+                      <button onClick={() => deleteLocation(loc.id)} className={`p-3 ${BG_TUTTO} rounded-xl border ${BORDER_BLU} hover:bg-red-900/30`}>
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                      </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* ==================== TAB LOCALITÀ ==================== */}
-            {activeTab === 'locations' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-800">📍 Località di Consegna</h2>
-
-                <div className="space-y-3">
-                  {locations.map(location => (
-                    <div key={location.id} className={`bg-gray-50 rounded-xl p-4 flex items-center justify-between transition-all ${!location.active ? 'opacity-50 grayscale' : ''}`}>
-                      <div className="flex items-center gap-4 flex-1">
-                        <MapPin className={`w-6 h-6 ${location.active ? 'text-blue-600' : 'text-gray-400'}`} />
-                        <div className="flex-1">
-                          {editingLocation === location.id ? (
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <input 
-                                type="text" 
-                                defaultValue={location.name} 
-                                className="border-2 rounded-lg px-3 py-2 w-32" 
-                                onBlur={(e) => updateLocation(location.id, { name: e.target.value })} 
-                              />
-                              <input 
-                                type="number" 
-                                step="0.50" 
-                                defaultValue={location.fee} 
-                                className="border-2 rounded-lg px-3 py-2 w-20" 
-                                onBlur={(e) => updateLocation(location.id, { fee: toNumber(e.target.value, 0) })} 
-                              />
-                              <input 
-                                type="text" 
-                                defaultValue={location.estimatedTime} 
-                                className="border-2 rounded-lg px-3 py-2 w-28" 
-                                onBlur={(e) => updateLocation(location.id, { estimatedTime: e.target.value })} 
-                              />
-                            </div>
-                          ) : (
-                            <>
-                              <h3 className="font-semibold text-gray-800">{location.name}</h3>
-                              <p className="text-sm text-gray-600">€{toNumber(location.fee, 0).toFixed(2)} • {location.estimatedTime}</p>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Toggle 
-                          enabled={location.active} 
-                          onChange={() => toggleLocationActive(location.id)} 
-                          size="sm" 
-                          label={`Toggle ${location.name}`}
-                        />
-                        <button 
-                          onClick={() => setEditingLocation(editingLocation === location.id ? null : location.id)} 
-                          className="p-3 hover:bg-gray-200 rounded-lg min-w-11 min-h-11"
-                        >
-                          <Edit2 className="w-5 h-5 text-blue-600" />
-                        </button>
-                        <button 
-                          onClick={() => deleteLocation(location.id)} 
-                          className="p-3 hover:bg-gray-200 rounded-lg min-w-11 min-h-11"
-                        >
-                          <Trash2 className="w-5 h-5 text-red-600" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-blue-50 rounded-xl p-5 border-2 border-blue-200">
-                  <h3 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                    <Plus className="w-5 h-5" /> Aggiungi Località
-                  </h3>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <input 
-                      type="text" 
-                      placeholder="Nome" 
-                      value={newLocation.name} 
-                      onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })} 
-                      className="flex-1 min-w-32 border-2 rounded-xl px-4 py-3" 
+                ))}
+                
+                {/* Aggiungi nuova località */}
+                <div className={`bg-[#608beb]/10 p-6 rounded-2xl border ${BORDER_BLU} mt-6`}>
+                  <h3 className={`font-bold ${TEXT_PRIMARY} mb-4 flex items-center gap-2`}><Plus className="w-5 h-5" /> Nuova Zona</h3>
+                  <div className="flex gap-3 flex-wrap">
+                    <input
+                      placeholder="Nome zona"
+                      value={newLocation.name}
+                      onChange={(e) => setNewLocation({ ...newLocation, name: e.target.value })}
+                      className={`${BG_TUTTO} border ${BORDER_BLU} p-3 rounded-xl flex-1 min-w-32 ${TEXT_PRIMARY}`}
                     />
-                    <input 
-                      type="number" 
-                      step="0.50" 
-                      placeholder="€" 
-                      value={newLocation.fee} 
-                      onChange={(e) => setNewLocation({ ...newLocation, fee: e.target.value })} 
-                      className="w-20 border-2 rounded-xl px-4 py-3" 
+                    <input
+                      placeholder="Tariffa"
+                      type="number"
+                      step="0.50"
+                      value={newLocation.fee}
+                      onChange={(e) => setNewLocation({ ...newLocation, fee: e.target.value })}
+                      className={`${BG_TUTTO} border ${BORDER_BLU} p-3 rounded-xl w-24 ${TEXT_PRIMARY}`}
                     />
-                    <input 
-                      type="text" 
-                      placeholder="Tempo" 
-                      value={newLocation.estimatedTime} 
-                      onChange={(e) => setNewLocation({ ...newLocation, estimatedTime: e.target.value })} 
-                      className="w-32 border-2 rounded-xl px-4 py-3" 
+                    <input
+                      placeholder="Tempo stimato"
+                      value={newLocation.estimatedTime}
+                      onChange={(e) => setNewLocation({ ...newLocation, estimatedTime: e.target.value })}
+                      className={`${BG_TUTTO} border ${BORDER_BLU} p-3 rounded-xl flex-1 min-w-32 ${TEXT_PRIMARY}`}
                     />
-                    <button 
-                      onClick={addLocation} 
-                      className="bg-blue-600 text-white px-6 py-3 rounded-xl hover:bg-blue-700 font-semibold min-h-11"
-                    >
-                      Aggiungi
+                    <button onClick={addLocation} className="bg-gradient-to-r from-green-600 to-green-700 text-white px-6 py-3 rounded-xl font-bold">
+                      <Plus className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
@@ -1219,170 +781,243 @@ function AdminPanel() {
 
             {/* ==================== TAB PREZZI ==================== */}
             {activeTab === 'prices' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-800">💰 Prezzi Menu</h2>
-
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">🍜 Formati Pokè</h3>
-                  <div className="space-y-3">
+              <div className="space-y-8">
+                <h2 className={`text-2xl font-bold ${TEXT_PRIMARY} mb-6`}>💰 Listino Prezzi</h2>
+                
+                {/* Formati Pokè */}
+                <div className={`bg-[#608beb]/10 p-6 rounded-2xl border ${BORDER_BLU}`}>
+                  <h3 className={`text-xl font-bold mb-6 ${TEXT_PRIMARY}`}>🥣 Formati Pokè</h3>
+                  <div className="space-y-4">
                     {pokeSizes.map(size => (
-                      <div key={size.id} className="flex items-center justify-between bg-white rounded-xl p-4 border">
+                      <div key={size.id} className={`${BG_TUTTO} p-5 rounded-xl border ${BORDER_BLU} flex items-center justify-between`}>
+                        <div className="flex items-center gap-4">
+                          {renderBowlIcon(size.id)}
+                          <span className={`font-bold text-lg ${TEXT_PRIMARY}`}>{size.name}</span>
+                        </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-3xl">{size.emoji}</span>
-                          <span className="font-semibold text-gray-800">{size.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">€</span>
-                          <input 
-                            type="number" 
-                            step="0.50" 
-                            value={size.price} 
-                            onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)} 
-                            className="w-24 border-2 rounded-xl px-3 py-2 text-center font-bold" 
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">➕ Prezzi Extra</h3>
-                  <div className="space-y-3">
-                    {[
-                      { key: 'protein', label: '🥩 Proteina Extra', value: extraPrices.protein },
-                      { key: 'ingredient', label: '🥬 Ingrediente Extra', value: extraPrices.ingredient },
-                      { key: 'sauce', label: '🥫 Salsa Extra', value: extraPrices.sauce }
-                    ].map(item => (
-                      <div key={item.key} className="flex items-center justify-between bg-white rounded-xl p-4 border">
-                        <span className="font-semibold text-gray-800">{item.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-600">€</span>
-                          <input 
-                            type="number" 
-                            step="0.10" 
-                            value={item.value} 
-                            onChange={(e) => updateExtraPrice(item.key, e.target.value)} 
-                            className="w-24 border-2 rounded-xl px-3 py-2 text-center font-bold" 
-                          />
+                          <span className={`${TEXT_SECONDARY} font-medium`}>€</span>
+                          <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-xl p-1">
+                            <button
+                              onClick={() => updatePokeSize(size.id, 'price', Math.max(0, size.price - 0.50).toFixed(2))}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] hover:bg-[#4a7bd9] text-white font-black text-xl"
+                            >−</button>
+                            <input
+                              type="number"
+                              step="0.50"
+                              className={`w-20 text-center font-bold text-lg bg-transparent ${TEXT_PRIMARY} border-none outline-none`}
+                              value={size.price}
+                              onChange={(e) => updatePokeSize(size.id, 'price', e.target.value)}
+                            />
+                            <button
+                              onClick={() => updatePokeSize(size.id, 'price', (parseFloat(size.price) + 0.50).toFixed(2))}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] hover:bg-[#4a7bd9] text-white font-black text-xl"
+                            >+</button>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">🛎️ Servizi</h3>
+                
+                {/* Extra */}
+                <div className={`bg-[#608beb]/10 p-6 rounded-2xl border ${BORDER_BLU}`}>
+                  <h3 className={`text-xl font-bold mb-6 ${TEXT_PRIMARY}`}>➕ Prezzi Extra</h3>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between bg-white rounded-xl p-4 border">
-                      <div className="flex items-center gap-3">
-                        <Toggle 
-                          enabled={floorDelivery.enabled} 
-                          onChange={(val) => updateFloorDelivery('enabled', val)} 
-                          size="sm" 
-                          label="Consegna al piano"
-                        />
-                        <span className="font-semibold text-gray-800">🏢 Consegna al Piano</span>
+                    {Object.entries(extraPrices).map(([key, val]) => (
+                      <div key={key} className={`${BG_TUTTO} p-4 rounded-xl border ${BORDER_BLU} flex justify-between items-center`}>
+                        <span className={`capitalize font-bold ${TEXT_PRIMARY}`}>{key}</span>
+                        <div className="flex items-center gap-3">
+                          <span className={`${TEXT_SECONDARY}`}>€</span>
+                          <div className="flex items-center gap-2 bg-[#1a1a1a] rounded-xl p-1">
+                            <button
+                              onClick={() => updateExtraPrice(key, Math.max(0, val - 0.10).toFixed(2))}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] text-white font-black"
+                            >−</button>
+                            <input
+                              type="number"
+                              step="0.10"
+                              className={`w-20 text-center font-bold bg-transparent ${TEXT_PRIMARY} border-none outline-none`}
+                              value={val}
+                              onChange={(e) => updateExtraPrice(key, e.target.value)}
+                            />
+                            <button
+                              onClick={() => updateExtraPrice(key, (parseFloat(val) + 0.10).toFixed(2))}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg bg-[#608beb] text-white font-black"
+                            >+</button>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">€</span>
-                        <input 
-                          type="number" 
-                          step="0.50" 
-                          value={floorDelivery.fee} 
-                          onChange={(e) => updateFloorDelivery('fee', e.target.value)} 
-                          disabled={!floorDelivery.enabled} 
-                          className="w-24 border-2 rounded-xl px-3 py-2 text-center font-bold disabled:opacity-50" 
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between bg-white rounded-xl p-4 border">
-                      <span className="font-semibold text-gray-800">💝 Mancia Rider Default</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-gray-600">€</span>
-                        <input 
-                          type="number" 
-                          step="0.50" 
-                          value={riderTip} 
-                          onChange={(e) => setRiderTip(toNumber(e.target.value, 0))} 
-                          className="w-24 border-2 rounded-xl px-3 py-2 text-center font-bold" 
-                        />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
             )}
 
-            {/* ==================== TAB TARIFFE ==================== */}
+            {/* ==================== TAB TARIFFE (ABBONAMENTO) ==================== */}
             {activeTab === 'subscription' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-800">💳 Tariffe Ordini-Lampo</h2>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">📋 Piani Disponibili</h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  
+                  {/* COLONNA SINISTRA: TARIFFE DISPONIBILI */}
+                  <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-6 rounded-2xl border border-slate-600">
+                    <h2 className={`text-2xl font-black ${TEXT_PRIMARY} mb-6 flex items-center gap-3`}>
+                      <span className="text-3xl">📋</span> TARIFFE DISPONIBILI
+                    </h2>
                     
-                    {Object.values(PRICING_PLANS).map(plan => (
-                      <div key={plan.id} className={`bg-gradient-to-r ${plan.color} rounded-xl p-5 border-2 ${plan.border} relative ${currentPlan === plan.id ? 'ring-4 ring-green-400' : ''}`}>
-                        {plan.recommended && (
-                          <div className="absolute top-0 right-0 bg-orange-500 text-white px-3 py-1 text-xs font-bold rounded-bl-lg">CONSIGLIATO</div>
-                        )}
-                        {currentPlan === plan.id && (
-                          <div className="absolute top-0 left-0 bg-green-500 text-white px-3 py-1 text-xs font-bold rounded-br-lg">✓ ATTIVO</div>
-                        )}
+                    <div className="space-y-4">
+                      {Object.values(PIANI_TARIFFARI).map((piano) => {
+                        const isActive = planId === piano.id;
+                        const isUpgrade = !isActive && piano.id !== 'freedom_150';
                         
-                        <div className="flex items-start justify-between mt-4">
-                          <div>
-                            <h4 className="text-xl font-bold text-gray-800">{plan.emoji} {plan.name}</h4>
-                            <p className="text-gray-600 text-sm mt-1">{plan.description}</p>
-                            <ul className="mt-3 space-y-1">
-                              {plan.features.map((f, i) => (
-                                <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                                  <span className="text-green-500">✓</span> {f}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-3xl font-bold text-gray-800">€{plan.price_per_order.toFixed(2)}</p>
-                            <p className="text-gray-600 text-sm">/ordine</p>
-                          </div>
-                        </div>
-
-                        {currentPlan !== plan.id && (
-                          <button 
-                            onClick={() => openContractModal(plan.id)} 
-                            className="mt-4 w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-xl flex items-center justify-center gap-2 min-h-11"
+                        return (
+                          <div
+                            key={piano.id}
+                            onClick={() => {
+                              if (isUpgrade) {
+                                setSelectedUpgradePlan(piano);
+                                setShowUpgradePopup(true);
+                                setSi1_Lettura(false);
+                                setSi2_Accettazione(false);
+                                setSi3_Consapevolezza(false);
+                                setSignatureName('');
+                              }
+                            }}
+                            className={`${BG_TUTTO} p-5 rounded-xl border-2 transition-all ${
+                              isActive 
+                                ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
+                                : isUpgrade
+                                  ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-lg cursor-pointer hover:scale-[1.02]'
+                                  : 'border-gray-600'
+                            }`}
                           >
-                            <ChevronRight className="w-5 h-5" /> Passa a {plan.name}
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2">✅ Piano Attivo</h3>
-                    
-                    <div className="bg-white rounded-xl p-6 border-2 border-green-400 shadow-lg">
-                      <div className="text-center mb-6">
-                        <span className="text-5xl">{PRICING_PLANS[currentPlan]?.emoji}</span>
-                        <h4 className="text-2xl font-bold text-gray-800 mt-2">{PRICING_PLANS[currentPlan]?.name}</h4>
-                        <p className="text-green-600 font-semibold">Piano Attivo</p>
-                      </div>
-
-                      <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Costo per ordine:</span>
-                          <span className="font-bold text-gray-800">€{PRICING_PLANS[currentPlan]?.price_per_order.toFixed(2)}</span>
-                        </div>
-                        {currentPlan === 'lampo_500' && (
-                          <div className="flex justify-between border-t pt-3">
-                            <span className="text-gray-600">Crediti:</span>
-                            <span className="font-bold text-blue-600 text-xl">{credits}</span>
+                            <div className="flex justify-between items-start">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${piano.colore} flex items-center justify-center text-white font-black text-lg shadow-lg`}>
+                                  {piano.nomeBadge.charAt(0)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className={`font-black text-lg ${TEXT_PRIMARY}`}>{piano.nome}</h3>
+                                    {isActive && (
+                                      <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">✓ ATTIVO</span>
+                                    )}
+                                    {isUpgrade && (
+                                      <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full font-bold border border-amber-500/50">UPGRADE</span>
+                                    )}
+                                  </div>
+                                  <p className={`text-sm ${TEXT_SECONDARY}`}>{piano.descrizione}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-green-400 font-black text-2xl">€{piano.costoPerOrdine.toFixed(2)}</p>
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>€/ordine</p>
+                              </div>
+                            </div>
+                            
+                            <div className={`mt-4 pt-4 border-t border-gray-700 grid grid-cols-3 gap-3 text-center`}>
+                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>Crediti</p>
+                                <p className={`font-bold ${TEXT_PRIMARY}`}>{piano.crediti}</p>
+                              </div>
+                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>Bonus</p>
+                                <p className={`font-bold ${piano.bonus > 0 ? 'text-green-400' : TEXT_PRIMARY}`}>
+                                  {piano.bonus > 0 ? `+${piano.bonus}` : '—'}
+                                </p>
+                              </div>
+                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
+                                <p className={`text-xs ${TEXT_SECONDARY}`}>Importo</p>
+                                <p className={`font-bold ${TEXT_PRIMARY}`}>
+                                  {piano.importo ? `€${piano.importo}` : 'Variabile'}
+                                </p>
+                              </div>
+                            </div>
                           </div>
-                        )}
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Link Documenti */}
+                    <div className={`mt-6 ${BG_TUTTO} p-4 rounded-xl border border-gray-700`}>
+                      <h4 className={`font-bold ${TEXT_PRIMARY} mb-3 flex items-center gap-2`}>📄 Documenti Legali</h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer" className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a]">
+                          <p className={`text-xs ${TEXT_SECONDARY}`}>Termini</p>
+                        </a>
+                        <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a]">
+                          <p className={`text-xs ${TEXT_SECONDARY}`}>Privacy</p>
+                        </a>
+                        <a href="https://ordini-lampo.it/tariffe" target="_blank" rel="noopener noreferrer" className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a]">
+                          <p className={`text-xs ${TEXT_SECONDARY}`}>Listino</p>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* COLONNA DESTRA: IL TUO PIANO ATTIVO */}
+                  <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 p-6 rounded-2xl border border-emerald-500/50">
+                    <h2 className={`text-2xl font-black ${TEXT_PRIMARY} mb-6 flex items-center gap-3`}>
+                      <span className="text-3xl">🎯</span> IL TUO PIANO
+                    </h2>
+                    
+                    {/* Widget Contatore Settimanale */}
+                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-green-500/30 mb-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className={`text-lg font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>📊 Questa Settimana</h3>
+                        <button onClick={loadWeeklyStats} className="text-green-400 hover:text-green-300 text-sm font-medium bg-green-500/10 px-3 py-1 rounded-lg">
+                          🔄 Aggiorna
+                        </button>
+                      </div>
+                      
+                      {weeklyStats.loading ? (
+                        <div className="text-center py-6">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            <div className="bg-[#212121] p-4 rounded-xl text-center">
+                              <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Ordini</p>
+                              <p className="text-4xl font-black text-green-400">{weeklyStats.ordersCount}</p>
+                            </div>
+                            <div className="bg-[#212121] p-4 rounded-xl text-center">
+                              <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Fee Totale</p>
+                              <p className="text-4xl font-black text-amber-400">€{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</p>
+                            </div>
+                          </div>
+                          <div className="bg-[#212121] p-3 rounded-lg text-center">
+                            <span className={`text-sm ${TEXT_SECONDARY}`}>
+                              {weeklyStats.ordersCount} × €{weeklyStats.feePerOrdine?.toFixed(2) || '1.20'}
+                            </span>
+                            <span className="text-amber-400 font-bold ml-2">= €{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</span>
+                          </div>
+                          <p className={`text-xs ${TEXT_SECONDARY} mt-3 text-center`}>
+                            📅 {weeklyStats.periodStart?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })} — {weeklyStats.periodEnd?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                    
+                    {/* Piano Attivo Card */}
+                    <div className={`${BG_TUTTO} p-6 rounded-xl border-2 border-green-500`}>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${PIANI_TARIFFARI[planId]?.colore} flex items-center justify-center text-white font-black text-2xl shadow-lg`}>
+                          {PIANI_TARIFFARI[planId]?.nomeBadge?.charAt(0) || 'F'}
+                        </div>
+                        <div>
+                          <h3 className={`font-black text-2xl ${TEXT_PRIMARY}`}>{PIANI_TARIFFARI[planId]?.nome || 'FREEDOM 150'}</h3>
+                          <p className="text-green-400 font-bold">Piano Attivo</p>
+                        </div>
+                      </div>
+                      <div className="bg-[#1a1a1a] p-4 rounded-lg">
+                        <div className="flex justify-between mb-2">
+                          <span className={TEXT_SECONDARY}>Costo per ordine:</span>
+                          <span className={`font-bold ${TEXT_PRIMARY}`}>€{PIANI_TARIFFARI[planId]?.costoPerOrdine?.toFixed(2) || '1.20'}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className={TEXT_SECONDARY}>Stato:</span>
+                          <span className="text-green-400 font-bold">✓ Attivo</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1393,171 +1028,268 @@ function AdminPanel() {
             {/* ==================== TAB IMPOSTAZIONI ==================== */}
             {activeTab === 'settings' && (
               <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-800">⚙️ Impostazioni</h2>
-
-                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
-                  <div>
-                    <label className="block font-semibold text-gray-800 mb-2">🏪 Nome Ristorante</label>
-                    <input 
-                      type="text" 
-                      value={restaurantName} 
-                      onChange={(e) => setRestaurantName(e.target.value)} 
-                      className="w-full border-2 rounded-xl px-4 py-3" 
+                <h2 className={`text-2xl font-bold ${TEXT_PRIMARY} mb-6`}>⚙️ Impostazioni</h2>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
+                    <h3 className={`font-bold ${TEXT_PRIMARY} mb-4`}>🏪 Nome Ristorante</h3>
+                    <input
+                      type="text"
+                      value={localRestaurantName}
+                      onChange={(e) => setLocalRestaurantName(e.target.value)}
+                      className={`w-full p-4 rounded-xl ${BG_TUTTO} border ${BORDER_BLU} ${TEXT_PRIMARY} font-medium`}
                     />
                   </div>
-                  <div>
-                    <label className="block font-semibold text-gray-800 mb-2">📱 WhatsApp</label>
-                    <input 
-                      type="text" 
-                      value={whatsappNumber} 
-                      onChange={(e) => setWhatsappNumber(e.target.value)} 
-                      className="w-full border-2 rounded-xl px-4 py-3" 
-                      placeholder="393271234567" 
+                  
+                  <div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
+                    <h3 className={`font-bold ${TEXT_PRIMARY} mb-4`}>📱 Numero WhatsApp</h3>
+                    <input
+                      type="text"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      className={`w-full p-4 rounded-xl ${BG_TUTTO} border ${BORDER_BLU} ${TEXT_PRIMARY} font-medium`}
                     />
                   </div>
-
-                  <div className="pt-4 border-t">
-                    <h3 className="font-semibold text-gray-800 mb-2">🔌 Connessione</h3>
-                    <div className="bg-white rounded-xl p-4">
-                      <p className="text-sm text-gray-600">API: {API_BASE_URL}</p>
-                      <p className="text-sm text-gray-600">Slug: {restaurantSlug}</p>
-                      <div className="mt-2">
-                        {connectionStatus === 'connected' ? (
-                          <span className="text-green-600 text-sm font-semibold">✅ Connesso</span>
-                        ) : (
-                          <span className="text-red-600 text-sm font-semibold">❌ Errore connessione</span>
-                        )}
-                      </div>
-                    </div>
+                </div>
+                
+                <div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
+                  <h3 className={`font-bold ${TEXT_PRIMARY} mb-4`}>🔗 Stato Connessione</h3>
+                  <div className="flex items-center gap-3">
+                    <span className={`w-4 h-4 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
+                    <span className={connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'}>
+                      {connectionStatus === 'connected' ? 'API Connessa' : 'Errore Connessione'}
+                    </span>
                   </div>
-
-                  <div className="pt-4 border-t">
-                    <h3 className="font-semibold text-gray-800 mb-2">📊 RADAR Tier</h3>
-                    <div className="flex items-center gap-4">
-                      <button 
-                        onClick={() => setRadarTier('base')} 
-                        className={`px-4 py-2 rounded-xl font-semibold transition-all min-h-11 ${radarTier === 'base' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}`}
-                      >
-                        BASE (Gratis)
-                      </button>
-                      <button 
-                        onClick={() => setRadarTier('full')} 
-                        className={`px-4 py-2 rounded-xl font-semibold transition-all min-h-11 ${radarTier === 'full' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-gray-200 text-gray-600'}`}
-                      >
-                        FULL (+€0.09/ordine)
-                      </button>
-                    </div>
-                  </div>
+                  <p className={`${TEXT_SECONDARY} mt-2 text-sm`}>
+                    Endpoint: {API_BASE_URL}
+                  </p>
                 </div>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* FOOTER */}
-        <div className="text-center text-gray-500 text-sm">
-          Ordini-Lampo Admin v3.0 COMPLETE • {restaurantName}
+          </div>
         </div>
       </div>
 
-      {/* MODAL CONTRATTO */}
-      {showContractModal && selectedPlanForUpgrade && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText className="w-6 h-6" />
-              Contratto {PRICING_PLANS[selectedPlanForUpgrade]?.name}
-            </h3>
-
-            <div className="flex items-center gap-2 mb-6">
-              {[0, 1, 2].map(step => (
-                <div key={step} className={`flex-1 h-2 rounded-full transition-all ${contractStep >= step ? 'bg-green-500' : 'bg-gray-200'}`} />
-              ))}
-            </div>
-
-            <div className="bg-gray-50 rounded-xl p-5 mb-6 min-h-[200px]">
-              {contractStep === 0 && (
-                <div>
-                  <h4 className="font-bold text-gray-800 mb-2">📄 Termini del Servizio</h4>
-                  <ul className="text-sm text-gray-600 space-y-2">
-                    <li>• Costo per ordine: <strong>€{PRICING_PLANS[selectedPlanForUpgrade]?.price_per_order.toFixed(2)}</strong></li>
-                    <li>• Attivazione immediata</li>
-                    <li>• Puoi cambiare piano quando vuoi</li>
-                  </ul>
-                  <div className="mt-4 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
-                    <p className="text-sm text-yellow-800">⚠️ Conferma di aver letto i termini</p>
-                  </div>
-                </div>
-              )}
-
-              {contractStep === 1 && (
-                <div>
-                  <h4 className="font-bold text-gray-800 mb-2">✅ Consapevolezza</h4>
-                  <ul className="text-sm text-gray-600 space-y-2">
-                    <li>• Addebiti secondo piano scelto</li>
-                    <li>• Fatture settimanali</li>
-                    <li>• Supporto via email</li>
-                  </ul>
-                  <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                    <p className="text-sm text-blue-800">ℹ️ Conferma di essere consapevole</p>
-                  </div>
-                </div>
-              )}
-
-              {contractStep === 2 && (
-                <div className="text-center py-4">
-                  <span className="text-5xl">{PRICING_PLANS[selectedPlanForUpgrade]?.emoji}</span>
-                  <h5 className="text-2xl font-bold text-gray-800 mt-2">{PRICING_PLANS[selectedPlanForUpgrade]?.name}</h5>
-                  <p className="text-3xl font-bold text-green-600 mt-2">€{PRICING_PLANS[selectedPlanForUpgrade]?.price_per_order.toFixed(2)}/ordine</p>
-                  <div className="mt-4 p-3 bg-green-50 rounded-xl border border-green-200">
-                    <p className="text-sm text-green-800">✓ Clicca CONFERMA per attivare</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setShowContractModal(false)} 
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-xl min-h-11"
-              >
-                Annulla
-              </button>
-              <button 
-                onClick={handleContractStep} 
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 min-h-11"
-              >
-                {contractStep < 2 ? <>Sì, Confermo <ChevronRight className="w-5 h-5" /></> : <>✓ CONFERMA</>}
+      {/* ==================== POPUP UPGRADE ==================== */}
+      {showUpgradePopup && selectedUpgradePlan && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a1a] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-amber-500/50 shadow-2xl">
+            
+            {/* Header Popup */}
+            <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 p-6 flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-black text-white">🚀 UPGRADE A {selectedUpgradePlan.nome}</h2>
+                <p className="text-amber-100">Risparmia €{((1.20 - selectedUpgradePlan.costoPerOrdine) * selectedUpgradePlan.totale).toFixed(0)} su {selectedUpgradePlan.totale} ordini</p>
+              </div>
+              <button onClick={() => setShowUpgradePopup(false)} className="text-white hover:bg-amber-800 p-2 rounded-full">
+                <X className="w-6 h-6" />
               </button>
             </div>
-
-            <p className="text-center text-gray-500 text-xs mt-4">Step {contractStep + 1} di 3</p>
+            
+            <div className="p-6 space-y-6">
+              
+              {/* Riepilogo Piano */}
+              <div className="bg-[#212121] p-5 rounded-xl border border-gray-700">
+                <h4 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📊 RIEPILOGO ACQUISTO</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className={TEXT_SECONDARY}>Crediti base</span>
+                    <span className={TEXT_PRIMARY}>{selectedUpgradePlan.crediti}</span>
+                  </div>
+                  {selectedUpgradePlan.bonus > 0 && (
+                    <div className="flex justify-between">
+                      <span className={TEXT_SECONDARY}>Bonus omaggio</span>
+                      <span className="text-green-400 font-bold">+{selectedUpgradePlan.bonus}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className={TEXT_SECONDARY}>Totale ordini</span>
+                    <span className="text-green-400 font-bold">{selectedUpgradePlan.totale}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className={TEXT_SECONDARY}>Costo effettivo</span>
+                    <span className="text-green-400 font-bold">€{selectedUpgradePlan.costoPerOrdine.toFixed(2)}/ordine</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
+                    <span className={TEXT_PRIMARY}>TOTALE</span>
+                    <span className="text-amber-400">€{selectedUpgradePlan.importo}</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Documenti Legali */}
+              <div className="bg-[#212121] p-4 rounded-xl">
+                <h4 className="font-bold text-white mb-3">📄 DOCUMENTI LEGALI</h4>
+                <p className={`text-xs ${TEXT_SECONDARY} mb-3`}>Prima di procedere, leggi attentamente tutti i documenti:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <a href="https://ordini-lampo.it/contratto-upgrade" target="_blank" rel="noopener noreferrer"
+                    className="bg-amber-500/20 border border-amber-500 p-3 rounded-lg text-center hover:bg-amber-500/30 transition-colors">
+                    <span className="text-2xl block mb-1">📜</span>
+                    <p className="text-amber-400 text-xs font-bold">CONTRATTO</p>
+                  </a>
+                  <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer"
+                    className="bg-[#1a1a1a] border border-gray-600 p-3 rounded-lg text-center hover:bg-[#2a2a2a]">
+                    <span className="text-2xl block mb-1">📋</span>
+                    <p className={`text-xs ${TEXT_SECONDARY}`}>Termini</p>
+                  </a>
+                  <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer"
+                    className="bg-[#1a1a1a] border border-gray-600 p-3 rounded-lg text-center hover:bg-[#2a2a2a]">
+                    <span className="text-2xl block mb-1">🔒</span>
+                    <p className={`text-xs ${TEXT_SECONDARY}`}>Privacy</p>
+                  </a>
+                </div>
+              </div>
+              
+              {/* Clausole Importanti */}
+              <div className="bg-red-900/30 border border-red-500/50 p-4 rounded-xl">
+                <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5" /> CLAUSOLE IMPORTANTI
+                </h4>
+                <ul className="text-xs text-gray-300 space-y-2">
+                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>I crediti <strong>NON sono rimborsabili</strong> in nessun caso</span></li>
+                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>I crediti sono validi <strong>12 mesi</strong> dalla data di acquisto</span></li>
+                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>Accettando, <strong>rinunci ad azioni di rivalsa</strong> per rimborsi</span></li>
+                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span><strong>Divieto assoluto</strong> di divulgare/vendere dati clienti a terzi</span></li>
+                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>Violazioni privacy → <strong>segnalazione a Garante e A.G.</strong></span></li>
+                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>Al termine crediti → passaggio automatico a FREEDOM 150</span></li>
+                </ul>
+              </div>
+              
+              {/* FORMULA DEI TRE SÌ */}
+              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
+                <h4 className="font-bold text-white mb-4 text-center text-lg">📜 DICHIARAZIONI OBBLIGATORIE</h4>
+                <p className={`text-xs ${TEXT_SECONDARY} text-center mb-4`}>
+                  Ai sensi degli artt. 46 e 47 del D.P.R. 445/2000, consapevole delle sanzioni penali previste dall'art. 76 del medesimo decreto e dall'art. 483 c.p. per dichiarazioni mendaci:
+                </p>
+                
+                {/* SÌ 1 */}
+                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl mb-3 border-2 transition-all ${
+                  si1_Lettura ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-blue-500'
+                }`}>
+                  <input type="checkbox" checked={si1_Lettura} onChange={(e) => setSi1_Lettura(e.target.checked)}
+                    className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0" />
+                  <div>
+                    <span className="text-green-400 font-black text-lg">SÌ 1</span>
+                    <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
+                      — <strong>DICHIARO</strong> di aver letto integralmente il Contratto di Acquisto Crediti Prepagati <em>prima</em> della presente sottoscrizione.
+                    </span>
+                  </div>
+                </label>
+                
+                {/* SÌ 2 */}
+                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl mb-3 border-2 transition-all ${
+                  si2_Accettazione ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-amber-500'
+                }`}>
+                  <input type="checkbox" checked={si2_Accettazione} onChange={(e) => setSi2_Accettazione(e.target.checked)}
+                    className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0" />
+                  <div>
+                    <span className="text-amber-400 font-black text-lg">SÌ 2</span>
+                    <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
+                      — <strong>ACCETTO</strong> integralmente e senza riserve tutte le clausole contrattuali, incluse quelle vessatorie ex artt. 1341-1342 c.c. (Artt. 5, 6, 8-bis, 8-ter, 9, 13).
+                    </span>
+                  </div>
+                </label>
+                
+                {/* SÌ 3 */}
+                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${
+                  si3_Consapevolezza ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-red-500'
+                }`}>
+                  <input type="checkbox" checked={si3_Consapevolezza} onChange={(e) => setSi3_Consapevolezza(e.target.checked)}
+                    className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0" />
+                  <div>
+                    <span className="text-red-400 font-black text-lg">SÌ 3</span>
+                    <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
+                      — <strong>SONO CONSAPEVOLE</strong> che le presenti dichiarazioni hanno valore legale, che eventuali dichiarazioni false configurano reato penale (art. 483 c.p.), e che tale circostanza non potrà essere contestata in sede giudiziale.
+                    </span>
+                  </div>
+                </label>
+                
+                {/* Contatore */}
+                <div className="mt-4 text-center">
+                  <span className={`text-lg font-bold ${si1_Lettura && si2_Accettazione && si3_Consapevolezza ? 'text-green-400' : 'text-gray-500'}`}>
+                    {[si1_Lettura, si2_Accettazione, si3_Consapevolezza].filter(Boolean).length}/3 dichiarazioni confermate
+                  </span>
+                </div>
+              </div>
+              
+              {/* Firma Digitale */}
+              <div>
+                <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-2`}>✍️ Firma Digitale (scrivi il tuo nome completo)</label>
+                <input
+                  type="text"
+                  value={signatureName}
+                  onChange={(e) => setSignatureName(e.target.value)}
+                  placeholder="Mario Rossi"
+                  className={`w-full p-4 rounded-xl bg-[#212121] border-2 ${signatureName.length >= 3 ? 'border-green-500' : 'border-gray-600'} ${TEXT_PRIMARY} font-medium text-lg`}
+                />
+                <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>
+                  La firma vale come accettazione formale del contratto ai sensi del Reg. eIDAS. Data: {new Date().toLocaleDateString('it-IT')}
+                </p>
+              </div>
+              
+              {/* Bottone Paga */}
+              <button
+                disabled={!si1_Lettura || !si2_Accettazione || !si3_Consapevolezza || signatureName.length < 3 || upgradeLoading}
+                onClick={handleUpgrade}
+                className={`w-full py-4 rounded-xl font-black text-xl transition-all ${
+                  si1_Lettura && si2_Accettazione && si3_Consapevolezza && signatureName.length >= 3
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/30'
+                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                {upgradeLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Elaborazione...
+                  </span>
+                ) : (
+                  `💳 PAGA €${selectedUpgradePlan.importo} E ATTIVA`
+                )}
+              </button>
+              
+              <p className={`text-xs ${TEXT_SECONDARY} text-center`}>
+                🔒 Pagamento sicuro tramite Stripe. I tuoi dati sono protetti.
+              </p>
+              
+            </div>
           </div>
         </div>
       )}
+
+      {/* Animation Styles */}
+      <style>{`
+        @keyframes bounce-subtle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-2px); }
+        }
+        .animate-bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+      `}</style>
     </div>
   );
 }
 
 // ==================== APP WRAPPER ====================
 export default function App() {
-  // ClerkProvider DEVE stare in main.jsx, NON qui!
   return (
     <>
       <SignedOut>
-        <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
           <div className="w-full max-w-md">
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-black text-slate-800">
-                ORDINI<span className="text-green-600">LAMPO</span>
+              <h1 className="text-4xl font-black text-gray-50">
+                ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
               </h1>
-              <p className="text-gray-600 mt-2">Admin Panel</p>
+              <p className="text-gray-400 mt-2">Admin Panel</p>
             </div>
             <SignIn 
               appearance={{
                 elements: {
                   rootBox: "mx-auto",
-                  card: "shadow-xl rounded-2xl"
+                  card: "shadow-xl rounded-2xl bg-[#1a1a1a] border border-[#608beb]"
                 }
               }}
             />
