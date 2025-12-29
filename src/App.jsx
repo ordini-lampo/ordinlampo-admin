@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  ClerkProvider, 
   SignedIn, 
   SignedOut, 
   SignIn, 
@@ -18,7 +17,6 @@ import {
 // Clerk Auth + Gemini Design + ChatGPT Fixes
 // ============================================
 
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ordini-lampo-api.ordini-lampo.workers.dev';
 
 // 🛡️ HELPER: Numeri sicuri (FIX ChatGPT - evita NaN.toFixed crash)
@@ -1543,20 +1541,9 @@ function AdminPanel() {
 
 // ==================== APP WRAPPER ====================
 export default function App() {
-  if (!CLERK_PUBLISHABLE_KEY) {
-    return (
-      <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md text-center">
-          <span className="text-5xl">⚠️</span>
-          <h1 className="text-2xl font-bold text-red-600 mt-4">Configurazione Mancante</h1>
-          <p className="text-gray-600 mt-2">VITE_CLERK_PUBLISHABLE_KEY non configurata</p>
-        </div>
-      </div>
-    );
-  }
-
+  // ClerkProvider DEVE stare in main.jsx, NON qui!
   return (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+    <>
       <SignedOut>
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
           <div className="w-full max-w-md">
@@ -1580,6 +1567,6 @@ export default function App() {
       <SignedIn>
         <AdminPanel />
       </SignedIn>
-    </ClerkProvider>
+    </>
   );
 }
