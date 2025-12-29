@@ -1,16 +1,7 @@
 // ============================================================
-// Ordini-Lampo apiClient.js - BULLDOZER ENTERPRISE
+// Ordini-Lampo apiClient.js - BULLDOZER ENTERPRISE v3.1
 // ============================================================
-// ISTRUZIONI:
-// 1. Sostituire src/apiClient.js con questo file
-// 2. Nel componente principale: import { api } from './apiClient'
-// 3. Inizializzare: api.init({ getToken, baseUrl })
-// ============================================================
-// FEATURES:
-// - Zero-trust: NO slug tenant in API (server derives from token)
-// - Abort + Dedupe + Circuit Breaker
-// - Idempotency-Key for mutations
-// - If-Match optimistic concurrency for settings
+// FIX v3.1: Safe fallback when not initialized (no crash)
 // ============================================================
 
 const DEFAULT_API_BASE = "https://ordini-lampo-api.ordini-lampo.workers.dev";
@@ -194,32 +185,77 @@ export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
 
 // -------------------------
 // Singleton pattern (backward compatible)
+// FIX v3.1: Safe fallbacks when not initialized
 // -------------------------
 export const api = (() => {
   let _api = null;
 
+  // Helper: returns true if initialized
+  const isReady = () => _api !== null;
+
+  // Helper: get api or null (no throw)
+  const getApi = () => _api;
+
   return {
     init: ({ baseUrl = DEFAULT_API_BASE, getToken }) => {
       _api = createApi({ baseUrl, getToken });
-      return _api;
-    },
-    _must: () => {
-      if (!_api) throw new Error("api not initialized. Call api.init({ getToken })");
+      console.log('[apiClient] Initialized successfully');
       return _api;
     },
 
-    isSafeMode: () => (api._must()).isSafeMode(),
-    testConnection: (...a) => (api._must()).testConnection(...a),
+    // FIX v3.1: Check if initialized
+    isInitialized: () => isReady(),
 
-    getSettings: (...a) => (api._must()).getSettings(...a),
-    saveSettings: (...a) => (api._must()).saveSettings(...a),
+    // FIX v3.1: Safe mode - return false if not initialized
+    isSafeMode: () => {
+      if (!isReady()) return false;
+      return _api.isSafeMode();
+    },
 
-    getOrders: (...a) => (api._must()).getOrders(...a),
-    updateOrderStatus: (...a) => (api._must()).updateOrderStatus(...a),
+    // FIX v3.1: testConnection - return false if not initialized
+    testConnection: async () => {
+      if (!isReady()) {
+        console.warn('[apiClient] testConnection called before init');
+        return false;
+      }
+      return _api.testConnection();
+    },
 
-    getBlockedSlots: (...a) => (api._must()).getBlockedSlots(...a),
-    blockSlot: (...a) => (api._must()).blockSlot(...a),
-    unblockSlot: (...a) => (api._must()).unblockSlot(...a),
+    // FIX v3.1: All methods check initialization first
+    getSettings: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.getSettings(...a);
+    },
+
+    saveSettings: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.saveSettings(...a);
+    },
+
+    getOrders: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.getOrders(...a);
+    },
+
+    updateOrderStatus: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.updateOrderStatus(...a);
+    },
+
+    getBlockedSlots: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.getBlockedSlots(...a);
+    },
+
+    blockSlot: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.blockSlot(...a);
+    },
+
+    unblockSlot: async (...a) => {
+      if (!isReady()) throw new Error("API_NOT_INITIALIZED");
+      return _api.unblockSlot(...a);
+    },
   };
 })();
 
