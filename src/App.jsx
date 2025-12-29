@@ -350,30 +350,30 @@ function AdminPanel() {
   const handleUpgrade = async () => {
     if (!selectedUpgradePlan) return;
     setUpgradeLoading(true);
-    try {
-      // Salva firma contratto
-      await api.signContract({
-        plan_id: selectedUpgradePlan.id,
-        signature_name: signatureName,
-        si1_lettura: si1_Lettura,
-        si2_accettazione: si2_Accettazione,
-        si3_consapevolezza: si3_Consapevolezza
-      });
-
-      // Crea checkout Stripe
-      const { url } = await api.createCheckout({
-        plan_id: selectedUpgradePlan.id,
-        success_url: window.location.href,
-        cancel_url: window.location.href
-      });
-
-      if (url) window.location.href = url;
-    } catch (error) {
-      console.error('Errore upgrade:', error);
-      alert('Errore durante il processo. Riprova.');
-    } finally {
-      setUpgradeLoading(false);
-    }
+    
+    // Per ora redirect a WhatsApp - Stripe checkout sarà implementato dopo
+    const message = encodeURIComponent(
+      `🚀 RICHIESTA UPGRADE PIANO\n\n` +
+      `Piano: ${selectedUpgradePlan.nome}\n` +
+      `Importo: €${selectedUpgradePlan.importo}\n` +
+      `Crediti: ${selectedUpgradePlan.totale}\n\n` +
+      `Firma: ${signatureName}\n` +
+      `Data: ${new Date().toLocaleDateString('it-IT')}\n\n` +
+      `✅ Ho accettato tutte le clausole contrattuali`
+    );
+    
+    // Mostra conferma e redirect a WhatsApp
+    const whatsappUrl = `https://wa.me/393896382394?text=${message}`;
+    
+    alert(
+      `✅ Dichiarazioni registrate!\n\n` +
+      `Verrai reindirizzato a WhatsApp per completare l'upgrade.\n\n` +
+      `Un operatore ti invierà il link di pagamento Stripe.`
+    );
+    
+    window.open(whatsappUrl, '_blank');
+    setShowUpgradePopup(false);
+    setUpgradeLoading(false);
   };
 
   const updateGeneric = (setter, id, field, value) => {
@@ -1123,7 +1123,7 @@ function AdminPanel() {
                 <h4 className="font-bold text-white mb-3">📄 DOCUMENTI LEGALI</h4>
                 <p className={`text-xs ${TEXT_SECONDARY} mb-3`}>Prima di procedere, leggi attentamente tutti i documenti:</p>
                 <div className="grid grid-cols-3 gap-2">
-                  <a href="https://ordini-lampo.it/contratto-upgrade" target="_blank" rel="noopener noreferrer"
+                  <a href="https://ordini-lampo.it/contratto-upgrade.html" target="_blank" rel="noopener noreferrer"
                     className="bg-amber-500/20 border border-amber-500 p-3 rounded-lg text-center hover:bg-amber-500/30 transition-colors">
                     <span className="text-2xl block mb-1">📜</span>
                     <p className="text-amber-400 text-xs font-bold">CONTRATTO</p>
@@ -1244,7 +1244,7 @@ function AdminPanel() {
                     Elaborazione...
                   </span>
                 ) : (
-                  `💳 PAGA €${selectedUpgradePlan.importo} E ATTIVA`
+                  `📱 RICHIEDI UPGRADE VIA WHATSAPP`
                 )}
               </button>
               
