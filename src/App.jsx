@@ -26,7 +26,7 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-// 📊 PIANI TARIFFARI ORDINI-LAMPO (V3.0 - SECCHI, NO BONUS)
+// 📊 PIANI TARIFFARI ORDINI-LAMPO (V3.1 - SECCHI, RADAR PRICING)
 // WhatsApp incluso in tutti i piani
 const PIANI_TARIFFARI = {
   freedom_80: {
@@ -38,11 +38,15 @@ const PIANI_TARIFFARI = {
     crediti: 80,
     importo: null,
     colore: 'from-emerald-500 to-teal-600',
-    icona: '🆓',
+    icona: '💚',
+    tipoPiano: 'payasyougo',
+    bannerTipo: 'PAY-AS-YOU-GO',
+    bannerColore: 'bg-emerald-600',
     descrizione: 'Paghi solo quando lavori',
     descrizioneEstesa: '80 ordini/settimana (~11/giorno). Fatturazione ogni venerdì. Se finisci prima, paghi e riparti. WhatsApp incluso.',
-    vantaggi: ['Pay-as-you-go', 'Nessun impegno', 'Ideale per iniziare'],
-    radarIncluso: false
+    vantaggi: ['Nessun impegno', 'Ideale per iniziare', 'Pagamento automatico ogni venerdì'],
+    radarIncluso: false,
+    radarPrezzo: 29
   },
   lampo_500: {
     id: 'lampo_500',
@@ -54,10 +58,14 @@ const PIANI_TARIFFARI = {
     importo: 490.00,
     colore: 'from-blue-500 to-blue-600',
     icona: '⚡',
+    tipoPiano: 'prepagato',
+    bannerTipo: 'PREPAGATO',
+    bannerColore: 'bg-blue-600',
     descrizione: 'Il piano equilibrato',
     descrizioneEstesa: '500 crediti prepagati. WhatsApp incluso.',
     vantaggi: ['Risparmio 18%', 'Volumi stabili', 'Gestione semplice'],
-    radarIncluso: false
+    radarIncluso: false,
+    radarPrezzo: 19
   },
   lampo_1000: {
     id: 'lampo_1000',
@@ -68,11 +76,15 @@ const PIANI_TARIFFARI = {
     crediti: 1000,
     importo: 850.00,
     colore: 'from-purple-500 to-purple-600',
-    icona: '🚀',
+    icona: '⚡⚡',
+    tipoPiano: 'prepagato',
+    bannerTipo: 'PREPAGATO',
+    bannerColore: 'bg-purple-600',
     descrizione: 'Per chi fa volume',
     descrizioneEstesa: '1000 crediti prepagati. WhatsApp incluso.',
-    vantaggi: ['Risparmio 29%', 'Miglior rapporto prezzo', 'Ideale weekend pieni'],
-    radarIncluso: false
+    vantaggi: ['Risparmio 29%', 'Miglior rapporto', 'Ideale weekend pieni'],
+    radarIncluso: false,
+    radarPrezzo: 19
   },
   king_1500: {
     id: 'king_1500',
@@ -84,10 +96,14 @@ const PIANI_TARIFFARI = {
     importo: 1125.00,
     colore: 'from-amber-500 to-amber-600',
     icona: '👑',
+    tipoPiano: 'prepagato',
+    bannerTipo: 'PREPAGATO VIP',
+    bannerColore: 'bg-amber-600',
     descrizione: 'Il massimo risparmio',
     descrizioneEstesa: '1500 crediti prepagati. WhatsApp + RADAR inclusi.',
     vantaggi: ['Risparmio 37%', 'RADAR FULL incluso', 'Alta rotazione'],
-    radarIncluso: true
+    radarIncluso: true,
+    radarPrezzo: 0
   }
 };
 
@@ -861,7 +877,7 @@ function AdminPanel() {
                 {/* HEADER TARIFFE */}
                 <div className="text-center mb-8">
                   <h2 className={`text-3xl font-black ${TEXT_PRIMARY} mb-2`}>📋 TARIFFE ORDINI-LAMPO</h2>
-                  <p className={`${TEXT_SECONDARY}`}>WhatsApp incluso in tutti i piani • Nessun costo nascosto</p>
+                  <p className={`${TEXT_SECONDARY}`}>Notifiche WhatsApp incluse nel servizio • Nessun costo nascosto</p>
                 </div>
 
                 {/* GRIGLIA PIANI */}
@@ -884,24 +900,23 @@ function AdminPanel() {
                             setSignatureName('');
                           }
                         }}
-                        className={`${BG_TUTTO} rounded-2xl border-2 transition-all overflow-hidden ${
+                        className={`${BG_TUTTO} rounded-2xl border-2 transition-all overflow-hidden flex flex-col ${
                           isActive 
                             ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
                             : isUpgrade
-                              ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-xl cursor-pointer hover:scale-[1.02]'
+                              ? 'border-gray-600 hover:border-amber-400 hover:shadow-xl cursor-pointer'
                               : 'border-gray-600'
                         }`}
                       >
+                        {/* BANNER TIPO PIANO */}
+                        <div className={`${piano.bannerColore} text-white text-xs font-black text-center py-1.5 tracking-wider`}>
+                          {piano.bannerTipo}
+                        </div>
+                        
                         {/* Header Piano */}
-                        <div className={`bg-gradient-to-r ${piano.colore} p-4 text-center`}>
-                          <span className="text-3xl">{piano.icona}</span>
-                          <h3 className="font-black text-xl text-white mt-1">{piano.nome}</h3>
-                          {isActive && (
-                            <span className="inline-block mt-2 bg-white/20 text-white text-xs px-3 py-1 rounded-full font-bold">✓ ATTIVO</span>
-                          )}
-                          {isUpgrade && (
-                            <span className="inline-block mt-2 bg-black/30 text-white text-xs px-3 py-1 rounded-full font-bold">UPGRADE →</span>
-                          )}
+                        <div className={`bg-gradient-to-r ${piano.colore} p-5 text-center`}>
+                          <span className="text-4xl">{piano.icona}</span>
+                          <h3 className="font-black text-2xl text-white mt-2">{piano.nome}</h3>
                         </div>
                         
                         {/* Prezzo Grande */}
@@ -916,40 +931,66 @@ function AdminPanel() {
                         </div>
                         
                         {/* Dettagli */}
-                        <div className="p-4 space-y-3">
+                        <div className="p-4 space-y-3 flex-grow">
                           <div className="flex justify-between items-center">
                             <span className={TEXT_SECONDARY}>Crediti</span>
-                            <span className={`font-bold ${TEXT_PRIMARY}`}>{piano.crediti}</span>
+                            <span className={`font-bold ${TEXT_PRIMARY}`}>
+                              {piano.id === 'freedom_80' ? `${piano.crediti}/sett` : piano.crediti}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center">
                             <span className={TEXT_SECONDARY}>Paghi</span>
                             <span className={`font-bold ${TEXT_PRIMARY}`}>
-                              {piano.importo ? `€${piano.importo.toFixed(0)}` : 'A consumo'}
+                              {piano.importo ? `€${piano.importo.toFixed(0)}` : 'Ogni venerdì'}
                             </span>
                           </div>
                           
-                          {/* Badge WhatsApp */}
-                          <div className="pt-2 border-t border-gray-700">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-green-400">✓</span>
-                              <span className={TEXT_SECONDARY}>WhatsApp incluso</span>
+                          {/* SERVIZI INCLUSI */}
+                          <div className="pt-3 border-t border-gray-700 space-y-2">
+                            {/* WhatsApp */}
+                            <div className="flex justify-between items-center text-sm">
+                              <span className={TEXT_SECONDARY}>📱 Notifiche WhatsApp</span>
+                              <span className="text-green-400 font-bold">INCLUSE</span>
                             </div>
-                            {piano.radarIncluso && (
-                              <div className="flex items-center gap-2 text-sm mt-1">
-                                <span className="text-amber-400">✓</span>
-                                <span className="text-amber-400 font-bold">RADAR FULL incluso</span>
-                              </div>
+                            {/* RADAR */}
+                            <div className="flex justify-between items-center text-sm">
+                              <span className={TEXT_SECONDARY}>📊 RADAR Full</span>
+                              {piano.radarIncluso ? (
+                                <span className="text-amber-400 font-bold">INCLUSO</span>
+                              ) : (
+                                <span className={TEXT_SECONDARY}>opzione €{piano.radarPrezzo}/mese</span>
+                              )}
+                            </div>
+                            {!piano.radarIncluso && (
+                              <p className={`text-xs ${TEXT_SECONDARY} italic`}>(marketing avanzato)</p>
                             )}
                           </div>
                         </div>
                         
                         {/* Vantaggi */}
-                        <div className="p-4 bg-[#1a1a1a]">
+                        <div className="p-4 bg-[#1a1a1a] border-t border-gray-700">
                           {piano.vantaggi?.map((v, i) => (
                             <p key={i} className={`text-xs ${TEXT_SECONDARY} flex items-center gap-2 mb-1`}>
                               <span className="text-[#608beb]">•</span> {v}
                             </p>
                           ))}
+                        </div>
+                        
+                        {/* CTA IN FONDO */}
+                        <div className="p-4 bg-[#1a1a1a]">
+                          {isActive ? (
+                            <div className="bg-green-500/20 border-2 border-green-500 rounded-xl p-3 text-center">
+                              <span className="text-green-400 font-bold text-sm">✓ PIANO ATTIVO</span>
+                            </div>
+                          ) : isUpgrade ? (
+                            <div className="bg-amber-500/20 border-2 border-amber-500 rounded-xl p-3 text-center hover:bg-amber-500/30 transition-colors">
+                              <span className="text-amber-400 font-bold text-sm">⬆️ UPGRADE</span>
+                            </div>
+                          ) : (
+                            <div className="bg-gray-700/30 border-2 border-gray-600 rounded-xl p-3 text-center">
+                              <span className={`${TEXT_SECONDARY} font-bold text-sm`}>—</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -968,7 +1009,7 @@ function AdminPanel() {
                     <div className={`${BG_TUTTO} p-5 rounded-xl border-2 border-green-500`}>
                       <div className="flex items-center gap-4 mb-4">
                         <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${PIANI_TARIFFARI[planId]?.colore} flex items-center justify-center text-2xl shadow-lg`}>
-                          {PIANI_TARIFFARI[planId]?.icona || '🆓'}
+                          {PIANI_TARIFFARI[planId]?.icona || '💚'}
                         </div>
                         <div>
                           <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>{PIANI_TARIFFARI[planId]?.nome || 'FREEDOM 150'}</h3>
@@ -981,7 +1022,7 @@ function AdminPanel() {
                           <span className={`font-bold text-green-400`}>€{PIANI_TARIFFARI[planId]?.tariffa?.toFixed(2) || '1.20'}/ordine</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className={TEXT_SECONDARY}>WhatsApp:</span>
+                          <span className={TEXT_SECONDARY}>Notifiche WhatsApp:</span>
                           <span className="text-green-400 font-bold">✓ Incluso</span>
                         </div>
                         {PIANI_TARIFFARI[planId]?.radarIncluso && (
@@ -1175,7 +1216,7 @@ function AdminPanel() {
                     </div>
                   )}
                   <div className="flex justify-between items-center bg-green-500/10 p-2 rounded-lg">
-                    <span className="text-green-400">📱 WhatsApp</span>
+                    <span className="text-green-400">📱 Notifiche WhatsApp</span>
                     <span className="text-green-400 font-bold">INCLUSO</span>
                   </div>
                   <div className="flex justify-between items-center text-xl font-bold pt-3 border-t border-gray-700">
