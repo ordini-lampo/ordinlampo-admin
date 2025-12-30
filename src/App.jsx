@@ -26,25 +26,23 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-// 📊 PIANI TARIFFARI ORDINI-LAMPO (LISTINO UFFICIALE V2.0 GOLD)
+// 📊 PIANI TARIFFARI ORDINI-LAMPO (V3.0 - SECCHI, NO BONUS)
+// WhatsApp incluso in tutti i piani
 const PIANI_TARIFFARI = {
-  freedom_150: {
-    id: 'freedom_150',
-    code: 'FREEDOM_150',
-    nome: 'FREEDOM 150',
+  freedom_80: {
+    id: 'freedom_80',
+    code: 'FREEDOM_80',
+    nome: 'FREEDOM 80',
     nomeBadge: 'FREEDOM',
     tariffa: 1.20,
-    crediti: 150,
-    bonus: 0,
-    totale: 150,
-    prezzoPieno: null,
-    sconto: 0,
+    crediti: 80,
     importo: null,
-    costoPerOrdine: 1.20,
-    costoEffettivo: 1.20,
     colore: 'from-emerald-500 to-teal-600',
-    descrizione: 'Linea di credito 150 ordini/settimana',
-    descrizioneEstesa: 'Lavora tranquillo, paghi solo quello che consumi. Ogni venerdì ricevi il riepilogo e il link per saldare.'
+    icona: '🆓',
+    descrizione: 'Paghi solo quando lavori',
+    descrizioneEstesa: '80 ordini/settimana (~11/giorno). Fatturazione ogni venerdì. Se finisci prima, paghi e riparti. WhatsApp incluso.',
+    vantaggi: ['Pay-as-you-go', 'Nessun impegno', 'Ideale per iniziare'],
+    radarIncluso: false
   },
   lampo_500: {
     id: 'lampo_500',
@@ -53,15 +51,13 @@ const PIANI_TARIFFARI = {
     nomeBadge: 'LAMPO',
     tariffa: 0.98,
     crediti: 500,
-    bonus: 50,
-    totale: 550,
-    prezzoPieno: 539.00,
-    sconto: 49.00,
     importo: 490.00,
-    costoPerOrdine: 0.98,
-    costoEffettivo: 0.89,
     colore: 'from-blue-500 to-blue-600',
-    descrizione: '500 + 50 bonus = 550 crediti'
+    icona: '⚡',
+    descrizione: 'Il piano equilibrato',
+    descrizioneEstesa: '500 crediti prepagati. WhatsApp incluso.',
+    vantaggi: ['Risparmio 18%', 'Volumi stabili', 'Gestione semplice'],
+    radarIncluso: false
   },
   lampo_1000: {
     id: 'lampo_1000',
@@ -70,15 +66,13 @@ const PIANI_TARIFFARI = {
     nomeBadge: 'LAMPO',
     tariffa: 0.85,
     crediti: 1000,
-    bonus: 100,
-    totale: 1100,
-    prezzoPieno: 935.00,
-    sconto: 85.00,
     importo: 850.00,
-    costoPerOrdine: 0.85,
-    costoEffettivo: 0.77,
     colore: 'from-purple-500 to-purple-600',
-    descrizione: '1000 + 100 bonus = 1100 crediti'
+    icona: '🚀',
+    descrizione: 'Per chi fa volume',
+    descrizioneEstesa: '1000 crediti prepagati. WhatsApp incluso.',
+    vantaggi: ['Risparmio 29%', 'Miglior rapporto prezzo', 'Ideale weekend pieni'],
+    radarIncluso: false
   },
   king_1500: {
     id: 'king_1500',
@@ -87,15 +81,13 @@ const PIANI_TARIFFARI = {
     nomeBadge: 'KING',
     tariffa: 0.75,
     crediti: 1500,
-    bonus: 150,
-    totale: 1650,
-    prezzoPieno: 1237.50,
-    sconto: 112.50,
     importo: 1125.00,
-    costoPerOrdine: 0.75,
-    costoEffettivo: 0.68,
     colore: 'from-amber-500 to-amber-600',
-    descrizione: '1500 + 150 bonus = 1650 crediti'
+    icona: '👑',
+    descrizione: 'Il massimo risparmio',
+    descrizioneEstesa: '1500 crediti prepagati. WhatsApp + RADAR inclusi.',
+    vantaggi: ['Risparmio 37%', 'RADAR FULL incluso', 'Alta rotazione'],
+    radarIncluso: true
   }
 };
 
@@ -244,7 +236,7 @@ function AdminPanel() {
   const [riderTip, setRiderTip] = useState(1.00);
 
   // ==================== STATI ABBONAMENTO ====================
-  const [planId, setPlanId] = useState('freedom_150');
+  const [planId, setPlanId] = useState('freedom_80');
   const [subscriptionStatus, setSubscriptionStatus] = useState('active');
   
   // ==================== STATI IMPOSTAZIONI ====================
@@ -309,9 +301,9 @@ function AdminPanel() {
       endOfWeek.setHours(23, 59, 59, 999);
 
       // Per ora usiamo dati mock - da collegare all'API
-      const pianoAttivo = PIANI_TARIFFARI[planId] || PIANI_TARIFFARI.freedom_150;
+      const pianoAttivo = PIANI_TARIFFARI[planId] || PIANI_TARIFFARI.freedom_80;
       const ordersCount = orders.length;
-      const feePerOrdine = pianoAttivo.costoPerOrdine;
+      const feePerOrdine = pianoAttivo.tariffa;
       const totaleFee = ordersCount * feePerOrdine;
 
       setWeeklyStats({
@@ -865,173 +857,203 @@ function AdminPanel() {
             {/* ==================== TAB TARIFFE (ABBONAMENTO) ==================== */}
             {activeTab === 'subscription' && (
               <div className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  
-                  {/* COLONNA SINISTRA: TARIFFE DISPONIBILI */}
-                  <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-6 rounded-2xl border border-slate-600">
-                    <h2 className={`text-2xl font-black ${TEXT_PRIMARY} mb-6 flex items-center gap-3`}>
-                      <span className="text-3xl">📋</span> TARIFFE DISPONIBILI
-                    </h2>
+                
+                {/* HEADER TARIFFE */}
+                <div className="text-center mb-8">
+                  <h2 className={`text-3xl font-black ${TEXT_PRIMARY} mb-2`}>📋 TARIFFE ORDINI-LAMPO</h2>
+                  <p className={`${TEXT_SECONDARY}`}>WhatsApp incluso in tutti i piani • Nessun costo nascosto</p>
+                </div>
+
+                {/* GRIGLIA PIANI */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {Object.values(PIANI_TARIFFARI).map((piano) => {
+                    const isActive = planId === piano.id;
+                    const isUpgrade = !isActive && piano.id !== 'freedom_80';
+                    const risparmio = piano.id !== 'freedom_80' ? Math.round((1 - piano.tariffa / 1.20) * 100) : 0;
                     
-                    <div className="space-y-4">
-                      {Object.values(PIANI_TARIFFARI).map((piano) => {
-                        const isActive = planId === piano.id;
-                        const isUpgrade = !isActive && piano.id !== 'freedom_150';
-                        
-                        return (
-                          <div
-                            key={piano.id}
-                            onClick={() => {
-                              if (isUpgrade) {
-                                setSelectedUpgradePlan(piano);
-                                setShowUpgradePopup(true);
-                                setSi1_Lettura(false);
-                                setSi2_Accettazione(false);
-                                setSi3_Consapevolezza(false);
-                                setSignatureName('');
-                              }
-                            }}
-                            className={`${BG_TUTTO} p-5 rounded-xl border-2 transition-all ${
-                              isActive 
-                                ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
-                                : isUpgrade
-                                  ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-lg cursor-pointer hover:scale-[1.02]'
-                                  : 'border-gray-600'
-                            }`}
-                          >
-                            <div className="flex justify-between items-start">
-                              <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${piano.colore} flex items-center justify-center text-white font-black text-lg shadow-lg`}>
-                                  {piano.nomeBadge.charAt(0)}
-                                </div>
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className={`font-black text-lg ${TEXT_PRIMARY}`}>{piano.nome}</h3>
-                                    {isActive && (
-                                      <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold">✓ ATTIVO</span>
-                                    )}
-                                    {isUpgrade && (
-                                      <span className="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded-full font-bold border border-amber-500/50">UPGRADE</span>
-                                    )}
-                                  </div>
-                                  <p className={`text-sm ${TEXT_SECONDARY}`}>{piano.descrizione}</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-green-400 font-black text-2xl">€{piano.costoPerOrdine.toFixed(2)}</p>
-                                <p className={`text-xs ${TEXT_SECONDARY}`}>€/ordine</p>
-                              </div>
-                            </div>
-                            
-                            <div className={`mt-4 pt-4 border-t border-gray-700 grid grid-cols-3 gap-3 text-center`}>
-                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
-                                <p className={`text-xs ${TEXT_SECONDARY}`}>Crediti</p>
-                                <p className={`font-bold ${TEXT_PRIMARY}`}>{piano.crediti}</p>
-                              </div>
-                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
-                                <p className={`text-xs ${TEXT_SECONDARY}`}>Bonus</p>
-                                <p className={`font-bold ${piano.bonus > 0 ? 'text-green-400' : TEXT_PRIMARY}`}>
-                                  {piano.bonus > 0 ? `+${piano.bonus}` : '—'}
-                                </p>
-                              </div>
-                              <div className="bg-[#1a1a1a] p-2 rounded-lg">
-                                <p className={`text-xs ${TEXT_SECONDARY}`}>Importo</p>
-                                <p className={`font-bold ${TEXT_PRIMARY}`}>
-                                  {piano.importo ? `€${piano.importo}` : 'Variabile'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    
-                    {/* Link Documenti */}
-                    <div className={`mt-6 ${BG_TUTTO} p-4 rounded-xl border border-gray-700`}>
-                      <h4 className={`font-bold ${TEXT_PRIMARY} mb-3 flex items-center gap-2`}>📄 Documenti Legali</h4>
-                      <div className="grid grid-cols-3 gap-2">
-                        <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer" className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a]">
-                          <p className={`text-xs ${TEXT_SECONDARY}`}>Termini</p>
-                        </a>
-                        <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a]">
-                          <p className={`text-xs ${TEXT_SECONDARY}`}>Privacy</p>
-                        </a>
-                        <a href="https://ordini-lampo.it/tariffe" target="_blank" rel="noopener noreferrer" className="text-center p-2 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a]">
-                          <p className={`text-xs ${TEXT_SECONDARY}`}>Listino</p>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* COLONNA DESTRA: IL TUO PIANO ATTIVO */}
-                  <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 p-6 rounded-2xl border border-emerald-500/50">
-                    <h2 className={`text-2xl font-black ${TEXT_PRIMARY} mb-6 flex items-center gap-3`}>
-                      <span className="text-3xl">🎯</span> IL TUO PIANO
-                    </h2>
-                    
-                    {/* Widget Contatore Settimanale */}
-                    <div className="bg-[#1a1a1a] p-5 rounded-xl border border-green-500/30 mb-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className={`text-lg font-bold ${TEXT_PRIMARY} flex items-center gap-2`}>📊 Questa Settimana</h3>
-                        <button onClick={loadWeeklyStats} className="text-green-400 hover:text-green-300 text-sm font-medium bg-green-500/10 px-3 py-1 rounded-lg">
-                          🔄 Aggiorna
-                        </button>
-                      </div>
-                      
-                      {weeklyStats.loading ? (
-                        <div className="text-center py-6">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+                    return (
+                      <div
+                        key={piano.id}
+                        onClick={() => {
+                          if (isUpgrade) {
+                            setSelectedUpgradePlan(piano);
+                            setShowUpgradePopup(true);
+                            setSi1_Lettura(false);
+                            setSi2_Accettazione(false);
+                            setSi3_Consapevolezza(false);
+                            setSignatureName('');
+                          }
+                        }}
+                        className={`${BG_TUTTO} rounded-2xl border-2 transition-all overflow-hidden ${
+                          isActive 
+                            ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
+                            : isUpgrade
+                              ? 'border-amber-500/50 hover:border-amber-400 hover:shadow-xl cursor-pointer hover:scale-[1.02]'
+                              : 'border-gray-600'
+                        }`}
+                      >
+                        {/* Header Piano */}
+                        <div className={`bg-gradient-to-r ${piano.colore} p-4 text-center`}>
+                          <span className="text-3xl">{piano.icona}</span>
+                          <h3 className="font-black text-xl text-white mt-1">{piano.nome}</h3>
+                          {isActive && (
+                            <span className="inline-block mt-2 bg-white/20 text-white text-xs px-3 py-1 rounded-full font-bold">✓ ATTIVO</span>
+                          )}
+                          {isUpgrade && (
+                            <span className="inline-block mt-2 bg-black/30 text-white text-xs px-3 py-1 rounded-full font-bold">UPGRADE →</span>
+                          )}
                         </div>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="bg-[#212121] p-4 rounded-xl text-center">
-                              <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Ordini</p>
-                              <p className="text-4xl font-black text-green-400">{weeklyStats.ordersCount}</p>
-                            </div>
-                            <div className="bg-[#212121] p-4 rounded-xl text-center">
-                              <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Fee Totale</p>
-                              <p className="text-4xl font-black text-amber-400">€{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</p>
-                            </div>
-                          </div>
-                          <div className="bg-[#212121] p-3 rounded-lg text-center">
-                            <span className={`text-sm ${TEXT_SECONDARY}`}>
-                              {weeklyStats.ordersCount} × €{weeklyStats.feePerOrdine?.toFixed(2) || '1.20'}
+                        
+                        {/* Prezzo Grande */}
+                        <div className="p-5 text-center border-b border-gray-700">
+                          <p className="text-green-400 font-black text-4xl">€{piano.tariffa.toFixed(2)}</p>
+                          <p className={`text-sm ${TEXT_SECONDARY}`}>per ordine</p>
+                          {risparmio > 0 && (
+                            <span className="inline-block mt-2 bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full font-bold">
+                              -{risparmio}% vs Freedom
                             </span>
-                            <span className="text-amber-400 font-bold ml-2">= €{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</span>
+                          )}
+                        </div>
+                        
+                        {/* Dettagli */}
+                        <div className="p-4 space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className={TEXT_SECONDARY}>Crediti</span>
+                            <span className={`font-bold ${TEXT_PRIMARY}`}>{piano.crediti}</span>
                           </div>
-                          <p className={`text-xs ${TEXT_SECONDARY} mt-3 text-center`}>
-                            📅 {weeklyStats.periodStart?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })} — {weeklyStats.periodEnd?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
-                          </p>
-                        </>
-                      )}
-                    </div>
+                          <div className="flex justify-between items-center">
+                            <span className={TEXT_SECONDARY}>Paghi</span>
+                            <span className={`font-bold ${TEXT_PRIMARY}`}>
+                              {piano.importo ? `€${piano.importo.toFixed(0)}` : 'A consumo'}
+                            </span>
+                          </div>
+                          
+                          {/* Badge WhatsApp */}
+                          <div className="pt-2 border-t border-gray-700">
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="text-green-400">✓</span>
+                              <span className={TEXT_SECONDARY}>WhatsApp incluso</span>
+                            </div>
+                            {piano.radarIncluso && (
+                              <div className="flex items-center gap-2 text-sm mt-1">
+                                <span className="text-amber-400">✓</span>
+                                <span className="text-amber-400 font-bold">RADAR FULL incluso</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Vantaggi */}
+                        <div className="p-4 bg-[#1a1a1a]">
+                          {piano.vantaggi?.map((v, i) => (
+                            <p key={i} className={`text-xs ${TEXT_SECONDARY} flex items-center gap-2 mb-1`}>
+                              <span className="text-[#608beb]">•</span> {v}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* SEZIONE IL TUO PIANO + STATS */}
+                <div className="grid md:grid-cols-2 gap-6 mt-8">
+                  
+                  {/* IL TUO PIANO ATTIVO */}
+                  <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 p-6 rounded-2xl border border-emerald-500/50">
+                    <h2 className={`text-xl font-black ${TEXT_PRIMARY} mb-4 flex items-center gap-3`}>
+                      <span className="text-2xl">🎯</span> IL TUO PIANO
+                    </h2>
                     
-                    {/* Piano Attivo Card */}
-                    <div className={`${BG_TUTTO} p-6 rounded-xl border-2 border-green-500`}>
+                    <div className={`${BG_TUTTO} p-5 rounded-xl border-2 border-green-500`}>
                       <div className="flex items-center gap-4 mb-4">
-                        <div className={`w-16 h-16 rounded-xl bg-gradient-to-r ${PIANI_TARIFFARI[planId]?.colore} flex items-center justify-center text-white font-black text-2xl shadow-lg`}>
-                          {PIANI_TARIFFARI[planId]?.nomeBadge?.charAt(0) || 'F'}
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${PIANI_TARIFFARI[planId]?.colore} flex items-center justify-center text-2xl shadow-lg`}>
+                          {PIANI_TARIFFARI[planId]?.icona || '🆓'}
                         </div>
                         <div>
-                          <h3 className={`font-black text-2xl ${TEXT_PRIMARY}`}>{PIANI_TARIFFARI[planId]?.nome || 'FREEDOM 150'}</h3>
+                          <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>{PIANI_TARIFFARI[planId]?.nome || 'FREEDOM 150'}</h3>
                           <p className="text-green-400 font-bold">Piano Attivo</p>
                         </div>
                       </div>
-                      <div className="bg-[#1a1a1a] p-4 rounded-lg">
-                        <div className="flex justify-between mb-2">
-                          <span className={TEXT_SECONDARY}>Costo per ordine:</span>
-                          <span className={`font-bold ${TEXT_PRIMARY}`}>€{PIANI_TARIFFARI[planId]?.costoPerOrdine?.toFixed(2) || '1.20'}</span>
+                      <div className="space-y-2 bg-[#1a1a1a] p-4 rounded-lg">
+                        <div className="flex justify-between">
+                          <span className={TEXT_SECONDARY}>Tariffa:</span>
+                          <span className={`font-bold text-green-400`}>€{PIANI_TARIFFARI[planId]?.tariffa?.toFixed(2) || '1.20'}/ordine</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className={TEXT_SECONDARY}>Stato:</span>
-                          <span className="text-green-400 font-bold">✓ Attivo</span>
+                          <span className={TEXT_SECONDARY}>WhatsApp:</span>
+                          <span className="text-green-400 font-bold">✓ Incluso</span>
                         </div>
+                        {PIANI_TARIFFARI[planId]?.radarIncluso && (
+                          <div className="flex justify-between">
+                            <span className={TEXT_SECONDARY}>RADAR:</span>
+                            <span className="text-amber-400 font-bold">✓ Incluso</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
+                  
+                  {/* STATISTICHE SETTIMANALI */}
+                  <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 p-6 rounded-2xl border border-slate-600">
+                    <h2 className={`text-xl font-black ${TEXT_PRIMARY} mb-4 flex items-center gap-3`}>
+                      <span className="text-2xl">📊</span> QUESTA SETTIMANA
+                    </h2>
+                    
+                    {weeklyStats.loading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500 mx-auto"></div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-[#1a1a1a] p-4 rounded-xl text-center">
+                            <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Ordini</p>
+                            <p className="text-3xl font-black text-green-400">{weeklyStats.ordersCount}</p>
+                          </div>
+                          <div className="bg-[#1a1a1a] p-4 rounded-xl text-center">
+                            <p className={`text-xs ${TEXT_SECONDARY} mb-1`}>Costo Totale</p>
+                            <p className="text-3xl font-black text-amber-400">€{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</p>
+                          </div>
+                        </div>
+                        <div className="bg-[#1a1a1a] p-3 rounded-lg text-center">
+                          <span className={`text-sm ${TEXT_SECONDARY}`}>
+                            {weeklyStats.ordersCount} ordini × €{PIANI_TARIFFARI[planId]?.tariffa?.toFixed(2) || '1.20'}
+                          </span>
+                          <span className="text-amber-400 font-bold ml-2">= €{weeklyStats.totaleFee?.toFixed(2) || '0.00'}</span>
+                        </div>
+                        <p className={`text-xs ${TEXT_SECONDARY} text-center`}>
+                          📅 {weeklyStats.periodStart?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })} — {weeklyStats.periodEnd?.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </p>
+                        <button onClick={loadWeeklyStats} className="w-full text-center text-green-400 hover:text-green-300 text-sm font-medium bg-green-500/10 px-3 py-2 rounded-lg">
+                          🔄 Aggiorna statistiche
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* DOCUMENTI LEGALI */}
+                <div className={`${BG_TUTTO} p-4 rounded-xl border border-gray-700 mt-6`}>
+                  <h4 className={`font-bold ${TEXT_PRIMARY} mb-3 flex items-center gap-2`}>📄 Documenti Legali</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer" className="text-center p-3 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors">
+                      <span className="text-xl">📋</span>
+                      <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>Termini</p>
+                    </a>
+                    <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-center p-3 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors">
+                      <span className="text-xl">🔒</span>
+                      <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>Privacy</p>
+                    </a>
+                    <a href="https://ordini-lampo.it/tariffe" target="_blank" rel="noopener noreferrer" className="text-center p-3 rounded-lg bg-[#1a1a1a] hover:bg-[#2a2a2a] transition-colors">
+                      <span className="text-xl">💰</span>
+                      <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>Listino</p>
+                    </a>
+                  </div>
+                </div>
+
               </div>
+            )}
             )}
 
             {/* ==================== TAB IMPOSTAZIONI ==================== */}
@@ -1120,8 +1142,8 @@ function AdminPanel() {
             {/* Header Popup */}
             <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 p-6 flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-black text-white">🚀 UPGRADE A {selectedUpgradePlan.nome}</h2>
-                <p className="text-amber-100">Risparmia €{((1.20 - selectedUpgradePlan.costoPerOrdine) * selectedUpgradePlan.totale).toFixed(0)} su {selectedUpgradePlan.totale} ordini</p>
+                <h2 className="text-2xl font-black text-white">{selectedUpgradePlan.icona} UPGRADE A {selectedUpgradePlan.nome}</h2>
+                <p className="text-amber-100">Risparmia €{((1.20 - selectedUpgradePlan.tariffa) * selectedUpgradePlan.crediti).toFixed(0)} su {selectedUpgradePlan.crediti} ordini</p>
               </div>
               <button onClick={() => setShowUpgradePopup(false)} className="text-white hover:bg-amber-800 p-2 rounded-full">
                 <X className="w-6 h-6" />
@@ -1133,28 +1155,32 @@ function AdminPanel() {
               {/* Riepilogo Piano */}
               <div className="bg-[#212121] p-5 rounded-xl border border-gray-700">
                 <h4 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📊 RIEPILOGO ACQUISTO</h4>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className={TEXT_SECONDARY}>Crediti base</span>
-                    <span className={TEXT_PRIMARY}>{selectedUpgradePlan.crediti}</span>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className={TEXT_SECONDARY}>Crediti</span>
+                    <span className={`font-bold text-xl ${TEXT_PRIMARY}`}>{selectedUpgradePlan.crediti}</span>
                   </div>
-                  {selectedUpgradePlan.bonus > 0 && (
-                    <div className="flex justify-between">
-                      <span className={TEXT_SECONDARY}>Bonus omaggio</span>
-                      <span className="text-green-400 font-bold">+{selectedUpgradePlan.bonus}</span>
+                  <div className="flex justify-between items-center">
+                    <span className={TEXT_SECONDARY}>Tariffa per ordine</span>
+                    <span className="text-green-400 font-bold text-xl">€{selectedUpgradePlan.tariffa.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className={TEXT_SECONDARY}>Risparmio vs Freedom</span>
+                    <span className="text-green-400 font-bold">-{Math.round((1 - selectedUpgradePlan.tariffa / 1.20) * 100)}%</span>
+                  </div>
+                  {selectedUpgradePlan.radarIncluso && (
+                    <div className="flex justify-between items-center bg-amber-500/10 p-2 rounded-lg">
+                      <span className="text-amber-400 font-bold">📊 RADAR FULL</span>
+                      <span className="text-amber-400 font-bold">INCLUSO</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className={TEXT_SECONDARY}>Totale ordini</span>
-                    <span className="text-green-400 font-bold">{selectedUpgradePlan.totale}</span>
+                  <div className="flex justify-between items-center bg-green-500/10 p-2 rounded-lg">
+                    <span className="text-green-400">📱 WhatsApp</span>
+                    <span className="text-green-400 font-bold">INCLUSO</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className={TEXT_SECONDARY}>Costo effettivo</span>
-                    <span className="text-green-400 font-bold">€{selectedUpgradePlan.costoPerOrdine.toFixed(2)}/ordine</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-700">
-                    <span className={TEXT_PRIMARY}>TOTALE</span>
-                    <span className="text-amber-400">€{selectedUpgradePlan.importo}</span>
+                  <div className="flex justify-between items-center text-xl font-bold pt-3 border-t border-gray-700">
+                    <span className={TEXT_PRIMARY}>TOTALE DA PAGARE</span>
+                    <span className="text-amber-400 text-2xl">€{selectedUpgradePlan.importo?.toFixed(0)}</span>
                   </div>
                 </div>
               </div>
