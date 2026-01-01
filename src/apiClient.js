@@ -4,7 +4,7 @@
 // FIX v3.1: Safe fallback when not initialized (no crash)
 // ============================================================
 
-const DEFAULT_API_BASE = "https://ordini-lampo-api.ordini-lampo.workers.dev";
+const DEFAULT_API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, "");
 
 // -------------------------
 // Small utilities
