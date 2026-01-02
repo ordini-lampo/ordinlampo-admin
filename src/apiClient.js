@@ -1,7 +1,9 @@
 // ============================================================
-// Ordini-Lampo apiClient.js - BULLDOZER ENTERPRISE v3.1
+// Ordini-Lampo apiClient.js - BULLDOZER ENTERPRISE v3.2
 // ============================================================
-// FIX v3.1: Safe fallback when not initialized (no crash)
+// v3.2: Clerk-agnostic auth (supports BOTH Bearer token and session-cookie)
+// - If getToken() exists and returns a token -> Authorization: Bearer <token>
+// - Otherwise -> no Authorization header, but credentials:"include" (cookie session)
 // ============================================================
 
 const DEFAULT_API_BASE = (import.meta.env.VITE_API_URL || "http://localhost:3000").replace(/\/+$/, "");
@@ -66,10 +68,9 @@ function makeAbortSignal(abortKey) {
 // -------------------------
 // Factory
 // -------------------------
-export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
-  if (typeof getToken !== "function") {
-    throw new Error("createApi requires getToken() (Clerk)");
-  }
+export function createApi({ baseUrl = DEFAULT_API_BASE, getToken } = {}) {
+  // v3.2: getToken is OPTIONAL now (cookie session mode supported)
+  const hasGetToken = typeof getToken === "function";
 
   async function request(method, path, {
     body,
@@ -82,9 +83,6 @@ export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
       throw new Error("SAFE_MODE_CIRCUIT_OPEN");
     }
 
-    const token = await getToken();
-    if (!token) throw new Error("NO_TOKEN");
-
     const url = `${baseUrl}${path}`;
     const bodyText = body ? JSON.stringify(body) : "";
 
@@ -94,11 +92,25 @@ export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
     const p = (async () => {
       const { signal } = makeAbortSignal(abortKey);
 
+      // v3.2: token is best-effort (may be null/undefined)
+      let token = null;
+      if (hasGetToken) {
+        try {
+          token = await getToken();
+        } catch {
+          token = null;
+        }
+      }
+
       const headers = {
         "content-type": "application/json",
-        "authorization": `Bearer ${token}`,
         "x-request-id": uuid(),
       };
+
+      // v3.2: add Authorization only when token exists
+      if (token) {
+        headers["authorization"] = `Bearer ${token}`;
+      }
 
       if (idempotent) headers["idempotency-key"] = uuid();
       if (Number.isFinite(ifMatchVersion)) headers["if-match"] = `W/"${ifMatchVersion}"`;
@@ -108,6 +120,8 @@ export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
         headers,
         body: body ? bodyText : undefined,
         signal,
+        // v3.2: REQUIRED for cookie-based sessions
+        credentials: "include",
       });
 
       const text = await res.text().catch(() => "");
@@ -135,7 +149,7 @@ export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
     // Health (no auth required)
     testConnection: async () => {
       try {
-        const res = await fetch(`${baseUrl}/health`);
+        const res = await fetch(`${baseUrl}/health`, { credentials: "include" });
         const data = await res.json().catch(() => ({}));
         return data?.status === "ok";
       } catch {
@@ -185,34 +199,26 @@ export function createApi({ baseUrl = DEFAULT_API_BASE, getToken }) {
 
 // -------------------------
 // Singleton pattern (backward compatible)
-// FIX v3.1: Safe fallbacks when not initialized
 // -------------------------
 export const api = (() => {
   let _api = null;
 
-  // Helper: returns true if initialized
   const isReady = () => _api !== null;
 
-  // Helper: get api or null (no throw)
-  const getApi = () => _api;
-
   return {
-    init: ({ baseUrl = DEFAULT_API_BASE, getToken }) => {
+    init: ({ baseUrl = DEFAULT_API_BASE, getToken } = {}) => {
       _api = createApi({ baseUrl, getToken });
-      console.log('[apiClient] Initialized successfully');
+      console.log('[apiClient] Initialized successfully (v3.2)');
       return _api;
     },
 
-    // FIX v3.1: Check if initialized
     isInitialized: () => isReady(),
 
-    // FIX v3.1: Safe mode - return false if not initialized
     isSafeMode: () => {
       if (!isReady()) return false;
       return _api.isSafeMode();
     },
 
-    // FIX v3.1: testConnection - return false if not initialized
     testConnection: async () => {
       if (!isReady()) {
         console.warn('[apiClient] testConnection called before init');
@@ -221,7 +227,6 @@ export const api = (() => {
       return _api.testConnection();
     },
 
-    // FIX v3.1: All methods check initialization first
     getSettings: async (...a) => {
       if (!isReady()) throw new Error("API_NOT_INITIALIZED");
       return _api.getSettings(...a);
