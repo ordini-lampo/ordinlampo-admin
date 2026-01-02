@@ -1376,32 +1376,69 @@ function AdminPanel() {
 }
 
 // ==================== APP WRAPPER ====================
-export default function App() {
+// ============================================
+// 🔐 TEMP AUTH (NO CLERK) — cookie-session
+// - If /admin/settings returns 200 => signed in
+// - If 401/403 => signed out (show login button)
+// ============================================
+function useSessionUser() {
+  const [state, setState] = useState({ isLoaded: false, isSignedIn: false });
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/admin/settings`, { credentials: "include" });
+        if (!alive) return;
+        if (res.ok) return setState({ isLoaded: true, isSignedIn: true });
+        if (res.status === 401 || res.status === 403) return setState({ isLoaded: true, isSignedIn: false });
+        return setState({ isLoaded: true, isSignedIn: false });
+      } catch {
+        if (!alive) return;
+        setState({ isLoaded: true, isSignedIn: false });
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  return state;
+}
+
+function LoginCard() {
+  const goLogin = () => {
+    const returnTo = encodeURIComponent(window.location.href);
+    window.location.href = `${API_BASE_URL}/auth/login?returnTo=${returnTo}`;
+  };
+
   return (
-    <>
-      <SignedOut>
-        <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-black text-gray-50">
-                ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
-              </h1>
-              <p className="text-gray-400 mt-2">Admin Panel</p>
-            </div>
-            <SignIn 
-              appearance={{
-                elements: {
-                  rootBox: "mx-auto",
-                  card: "shadow-xl rounded-2xl bg-[#1a1a1a] border border-[#608beb]"
-                }
-              }}
-            />
-          </div>
+    <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-black text-gray-50">
+            ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
+          </h1>
+          <p className="text-gray-400 mt-2">Admin Panel</p>
         </div>
-      </SignedOut>
-      <SignedIn>
-        <AdminPanel />
-      </SignedIn>
-    </>
+
+        <div className="shadow-xl rounded-2xl bg-[#1a1a1a] border border-[#608beb] p-6">
+          <p className="text-gray-200 font-bold text-lg mb-2">Accedi</p>
+          <p className="text-gray-400 text-sm mb-4">Login gestito dal backend (session-cookie).</p>
+          <button
+            onClick={goLogin}
+            className="w-full py-3 rounded-xl font-black bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transition-all"
+          >
+            🔐 VAI AL LOGIN
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
+
+export default function App() {
+  const { isLoaded, isSignedIn } = useSessionUser();
+  if (!isLoaded) return null;
+  if (!isSignedIn) return <LoginCard />;
+  return <AdminPanel />;
+}
+
