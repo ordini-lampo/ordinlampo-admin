@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  SignedIn, 
-  SignedOut, 
-  SignIn, 
-  useUser, 
-  useAuth 
-} from '@clerk/clerk-react';
+// Clerk removed (Step 3)
+
 import { 
   Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, 
   Settings, CreditCard, Star, AlertCircle, Phone, ChevronDown, ChevronUp,
