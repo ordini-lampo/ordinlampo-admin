@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // Clerk removed (Step 3)
 
-import { 
-  Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, 
+import {
+  Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock,
   Settings, CreditCard, Star, AlertCircle, Phone, ChevronDown, ChevronUp,
   ShoppingBag, TrendingUp, RefreshCw, CheckCircle, LogOut, X
 } from 'lucide-react';
@@ -10,10 +10,11 @@ import {
 // ============================================
 // 💎 ADMIN PANEL ORDINLAMPO v4.0 PROFESSIONAL
 // Design: Grigio #212121 + Bordi Blu #608beb
-// Migrato da Supabase a Clerk/Neon
+// Auth: migration in progress (Step 3)
 // ============================================
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ordini-lampo-api.ordini-lampo.workers.dev';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://ordini-lampo-api.ordini-lampo.workers.dev')
+  .replace(/\/+$/, '');
 
 // 🛡️ HELPER: Numeri sicuri (evita NaN.toFixed crash)
 const toNumber = (value, fallback = 0) => {
@@ -152,45 +153,81 @@ const Icons = {
 };
 
 // ============================================
-// API CLIENT per Clerk
+// API CLIENT (NO CLERK) — cookie-session + token opzionale
 // ============================================
 const createApiClient = (getToken) => {
+  const hasGetToken = typeof getToken === 'function';
+
   const fetchWithAuth = async (endpoint, options = {}) => {
-    const token = await getToken();
+    // Token opzionale: se esiste getToken lo usiamo, altrimenti andiamo solo di cookie-session
+    let token = null;
+    if (hasGetToken) {
+      try { token = await getToken(); } catch { token = null; }
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+
+    // In cookie-mode NON serve Authorization. Lo lasciamo solo come compat legacy.
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers
-      }
+      headers,
+      credentials: 'include' // ✅ fondamentale: invia/legge i cookies di sessione
     });
+
     if (!res.ok) {
       const error = await res.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || `HTTP ${res.status}`);
+      const e = new Error(error.error || `HTTP ${res.status}`);
+      e.status = res.status;
+      e.payload = error;
+      throw e;
     }
-    return res.json();
+
+    // Alcune route potrebbero rispondere senza JSON (difensivo)
+    const text = await res.text().catch(() => '');
+    try { return text ? JSON.parse(text) : {}; } catch { return {}; }
   };
 
   return {
     testConnection: async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/health`);
-        const data = await res.json();
+        const res = await fetch(`${API_BASE_URL}/health`, { credentials: 'include' });
+        const data = await res.json().catch(() => ({}));
         return data?.status === 'ok';
-      } catch { return false; }
+      } catch {
+        return false;
+      }
     },
-    getOrders: (date) => fetchWithAuth(`/admin/orders?date=${date}`),
+
+    getOrders: (date) => fetchWithAuth(`/admin/orders?date=${encodeURIComponent(date)}`),
     getSettings: () => fetchWithAuth('/admin/settings'),
-    saveSettings: (data) => fetchWithAuth('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
-    updateOrderStatus: (orderId, status) => fetchWithAuth(`/admin/orders/${orderId}/status`, { 
-      method: 'PATCH', 
-      body: JSON.stringify({ status }) 
-    }),
-    signContract: (data) => fetchWithAuth('/admin/contract-signatures', { method: 'POST', body: JSON.stringify(data) }),
-    createCheckout: (planCode) => fetchWithAuth('/admin/billing/checkout', { method: 'POST', body: JSON.stringify({ plan_code: planCode }) })
+    saveSettings: (data) =>
+      fetchWithAuth('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
+
+    updateOrderStatus: (orderId, status) =>
+      fetchWithAuth(`/admin/orders/${encodeURIComponent(orderId)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      }),
+
+    signContract: (data) =>
+      fetchWithAuth('/admin/contract-signatures', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+
+    createCheckout: (planCode) =>
+      fetchWithAuth('/admin/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan_code: planCode })
+      })
   };
 };
+
 
 // ==================== MAIN ADMIN COMPONENT ====================
 function AdminPanel() {
