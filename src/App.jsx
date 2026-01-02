@@ -231,9 +231,9 @@ const createApiClient = (getToken) => {
 
 // ==================== MAIN ADMIN COMPONENT ====================
 function AdminPanel() {
-  const { user } = useUser();
-  const { getToken, signOut } = useAuth();
-  
+  const { user } = useSessionUser();
+  const { getToken, signOut } = useSessionAuth();
+
   // API Client
   const apiRef = useRef(null);
   if (!apiRef.current) {
@@ -241,7 +241,7 @@ function AdminPanel() {
   }
   const api = apiRef.current;
 
-  // Restaurant info from Clerk metadata
+  // Restaurant info from session user metadata
   const restaurantSlug = user?.publicMetadata?.restaurant_id || 'pokenjoy-sanremo';
   const restaurantName = user?.publicMetadata?.restaurant_name || 'Pokenjoy Sanremo';
 
@@ -1418,27 +1418,98 @@ function AdminPanel() {
 // - If /admin/settings returns 200 => signed in
 // - If 401/403 => signed out (show login button)
 // ============================================
+// ==================== APP WRAPPER ====================
+// ============================================
+// 🔐 TEMP AUTH (NO CLERK) — cookie-session
+// - GET /admin/settings:
+//   - 200 => signed in (we derive restaurant metadata)
+//   - 401/403 => signed out
+// ============================================
 function useSessionUser() {
-  const [state, setState] = useState({ isLoaded: false, isSignedIn: false });
+  const [state, setState] = useState({
+    isLoaded: false,
+    isSignedIn: false,
+    user: null,
+  });
 
   useEffect(() => {
     let alive = true;
+
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/admin/settings`, { credentials: "include" });
+        const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+          credentials: "include",
+        });
+
         if (!alive) return;
-        if (res.ok) return setState({ isLoaded: true, isSignedIn: true });
-        if (res.status === 401 || res.status === 403) return setState({ isLoaded: true, isSignedIn: false });
-        return setState({ isLoaded: true, isSignedIn: false });
+
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+
+          // Deriva dati ristorante da /admin/settings (safe fallback)
+          const restaurantSlug =
+            data?.restaurant?.slug ||
+            data?.restaurant?.id ||
+            data?.restaurant_id ||
+            "pokenjoy-sanremo";
+
+          const restaurantName =
+            data?.restaurant?.name ||
+            data?.restaurant_name ||
+            "Pokenjoy Sanremo";
+
+          setState({
+            isLoaded: true,
+            isSignedIn: true,
+            user: {
+              publicMetadata: {
+                restaurant_id: restaurantSlug,
+                restaurant_name: restaurantName,
+              },
+            },
+          });
+          return;
+        }
+
+        if (res.status === 401 || res.status === 403) {
+          setState({ isLoaded: true, isSignedIn: false, user: null });
+          return;
+        }
+
+        setState({ isLoaded: true, isSignedIn: false, user: null });
       } catch {
         if (!alive) return;
-        setState({ isLoaded: true, isSignedIn: false });
+        setState({ isLoaded: true, isSignedIn: false, user: null });
       }
     })();
-    return () => { alive = false; };
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   return state;
+}
+
+function useSessionAuth() {
+  // In cookie-session, token non serve. Manteniamo compat API client.
+  const getToken = null;
+
+  const signOut = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+      // ignore
+    } finally {
+      // ricarica in modo pulito
+      window.location.href = window.location.href;
+    }
+  };
+
+  return { getToken, signOut };
 }
 
 function LoginCard() {
@@ -1459,7 +1530,9 @@ function LoginCard() {
 
         <div className="shadow-xl rounded-2xl bg-[#1a1a1a] border border-[#608beb] p-6">
           <p className="text-gray-200 font-bold text-lg mb-2">Accedi</p>
-          <p className="text-gray-400 text-sm mb-4">Login gestito dal backend (session-cookie).</p>
+          <p className="text-gray-400 text-sm mb-4">
+            Login gestito dal backend (session-cookie).
+          </p>
           <button
             onClick={goLogin}
             className="w-full py-3 rounded-xl font-black bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transition-all"
@@ -1478,4 +1551,5 @@ export default function App() {
   if (!isSignedIn) return <LoginCard />;
   return <AdminPanel />;
 }
+
 
