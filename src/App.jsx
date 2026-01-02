@@ -237,7 +237,7 @@ function AdminPanel() {
   // API Client
   const apiRef = useRef(null);
   if (!apiRef.current) {
-    apiRef.current = createApiClient(getToken);
+    apiRef.current = createApiClient();
   }
   const api = apiRef.current;
 
