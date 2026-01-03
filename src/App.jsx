@@ -8,7 +8,7 @@ import {
 // ============================================
 // 💎 ADMIN PANEL ORDINLAMPO v4.0 PROFESSIONAL
 // Design: Grigio #212121 + Bordi Blu #608beb
-// Migrato da Supabase a Clerk/Neon
+// Auth: migration in progress (Step 3)
 // ============================================
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://ordini-lampo-api-production.up.railway.app').replace(/\/+$/, '');
@@ -214,6 +214,7 @@ const Icons = {
     </svg>
   )
 };
+
 
 
 
