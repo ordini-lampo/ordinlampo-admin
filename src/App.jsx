@@ -923,14 +923,15 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                   <p className={`${TEXT_SECONDARY}`}>Notifiche WhatsApp incluse nel servizio • Nessun costo nascosto</p>
                 </div>
 
-                {/* GRIGLIA PIANI */}
+                                {/* GRIGLIA PIANI */}
                 <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {Object.values(PIANI_TARIFFARI).map((piano) => {
                     const isActive = planId === piano.id;
                     const isUpgrade = !isActive && piano.id !== 'freedom_80';
-                    const risparmio = piano.id !== 'freedom_80' ? Math.round((1 - piano.tariffa / 1.20) * 100) : 0;
-                    
-                    
+                    const risparmio =
+                      piano.id !== 'freedom_80' ? Math.round((1 - piano.tariffa / 1.20) * 100) : 0;
+
+                    return (
                       <div
                         key={piano.id}
                         onClick={() => {
@@ -944,24 +945,26 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                           }
                         }}
                         className={`${BG_TUTTO} rounded-2xl border-2 transition-all overflow-hidden flex flex-col ${
-                          isActive 
-                            ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20' 
+                          isActive
+                            ? 'border-green-500 ring-2 ring-green-500/30 shadow-lg shadow-green-500/20'
                             : isUpgrade
                               ? 'border-gray-600 hover:border-amber-400 hover:shadow-xl cursor-pointer'
                               : 'border-gray-600'
                         }`}
                       >
                         {/* BANNER TIPO PIANO */}
-                        <div className={`${piano.bannerColore} text-white text-xs font-black text-center py-1.5 tracking-wider`}>
+                        <div
+                          className={`${piano.bannerColore} text-white text-xs font-black text-center py-1.5 tracking-wider`}
+                        >
                           {piano.bannerTipo}
                         </div>
-                        
+
                         {/* Header Piano */}
                         <div className={`bg-gradient-to-r ${piano.colore} p-5 text-center`}>
                           <span className="text-4xl">{piano.icona}</span>
                           <h3 className="font-black text-2xl text-white mt-2">{piano.nome}</h3>
                         </div>
-                        
+
                         {/* Prezzo Grande */}
                         <div className="p-5 text-center border-b border-gray-700">
                           <p className="text-green-400 font-black text-4xl">€{piano.tariffa.toFixed(2)}</p>
@@ -972,7 +975,7 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                             </span>
                           )}
                         </div>
-                        
+
                         {/* Dettagli */}
                         <div className="p-4 space-y-3 flex-grow">
                           <div className="flex justify-between items-center">
@@ -987,8 +990,9 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                               {piano.importo ? `€${piano.importo.toFixed(0)}` : 'Ogni venerdì'}
                             </span>
                           </div>
-                          
+
                           {/* SERVIZI INCLUSI */}
+
                           <div className="pt-3 border-t border-gray-700 space-y-2">
                             {/* WhatsApp */}
                             <div className="flex justify-between items-center text-sm">
@@ -1009,7 +1013,7 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Vantaggi */}
                         <div className="p-4 bg-[#1a1a1a] border-t border-gray-700">
                           {piano.vantaggi?.map((v, i) => (
@@ -1018,8 +1022,8 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                             </p>
                           ))}
                         </div>
-                        
-                        {/* CTA IN FONDO */}
+
+                                        {/* CTA IN FONDO */}
                         <div className="p-4 bg-[#1a1a1a]">
                           {isActive ? (
                             <div className="bg-green-500/20 border-2 border-green-500 rounded-xl p-3 text-center">
@@ -1041,6 +1045,8 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                 </div>
 
                 {/* SEZIONE IL TUO PIANO + STATS */}
+     
+
                 <div className="grid md:grid-cols-2 gap-6 mt-8">
                   
                   {/* IL TUO PIANO ATTIVO */}
