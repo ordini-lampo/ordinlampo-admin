@@ -503,18 +503,18 @@ return () => {
   }, [selectedDate]);
 
   // ==================== LOADING SCREEN ====================
-  if (loading && connectionStatus === 'checking') {
-    
-      <div className={`min-h-screen ${BG_TUTTO} flex items-center justify-center`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb] mx-auto mb-4"></div>
-          <p className={`${TEXT_PRIMARY} font-medium`}>Caricamento...</p>
-        </div>
+if (loading && connectionStatus === 'checking') {
+  return (
+    <div className={`min-h-screen ${BG_TUTTO} flex items-center justify-center`}>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb] mx-auto mb-4"></div>
+        <p className={`${TEXT_PRIMARY} font-medium`}>Caricamento...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  // ==================== RENDER ====================
+// ==================== RENDER ====================
   
     <div className={`min-h-screen ${BG_TUTTO} py-8 px-4 relative overflow-hidden font-sans`}>
       <div className="max-w-6xl mx-auto relative z-20">
