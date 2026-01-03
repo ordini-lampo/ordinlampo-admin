@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-// Clerk removed (Step 3)
-
-import {
-  Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock,
+import { 
+  Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, 
   Settings, CreditCard, Star, AlertCircle, Phone, ChevronDown, ChevronUp,
   ShoppingBag, TrendingUp, RefreshCw, CheckCircle, LogOut, X
 } from 'lucide-react';
@@ -13,8 +11,73 @@ import {
 // Auth: migration in progress (Step 3)
 // ============================================
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'https://ordini-lampo-api.ordini-lampo.workers.dev')
-  .replace(/\/+$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://ordini-lampo-api-production.up.railway.app').replace(/\/+$/, '');
+
+// ============================================
+// API CLIENT (session-cookie auth, no Clerk)
+// ============================================
+const createApiClient = () => {
+  const fetchWithAuth = async (endpoint, options = {}) => {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (!res.ok) {
+  const error = await res.json().catch(() => ({ error: 'Network error' }));
+  throw new Error(error.error || `HTTP ${res.status}`);
+}
+
+    return res.json();
+  };
+
+  return {
+    testConnection: async () => {
+      try {
+  const res = await fetch(`${API_BASE_URL}/api/v1/health`, {
+  method: 'GET',
+  credentials: 'include',
+});
+  
+        const data = await res.json().catch(() => ({}));
+        return data?.status === 'ok';
+      } catch {
+        return false;
+      }
+    },
+
+    getOrders: (date) => fetchWithAuth(`/api/v1/admin/orders?date=${encodeURIComponent(date)}`),
+    getSettings: () => fetchWithAuth('/api/v1/admin/settings'),
+    saveSettings: (data) =>
+      fetchWithAuth('/api/v1/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    updateOrderStatus: (orderId, status) =>
+      fetchWithAuth(`/api/v1/admin/orders/${encodeURIComponent(orderId)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+
+    signContract: (data) =>
+      fetchWithAuth('/api/v1/admin/contract-signatures', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    createCheckout: (planCode) =>
+      fetchWithAuth('/api/v1/admin/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan_code: planCode }),
+      }),
+  };
+};
+
 
 // 🛡️ HELPER: Numeri sicuri (evita NaN.toFixed crash)
 const toNumber = (value, fallback = 0) => {
@@ -152,98 +215,22 @@ const Icons = {
   )
 };
 
-// ============================================
-// API CLIENT (NO CLERK) — cookie-session + token opzionale
-// ============================================
-const createApiClient = (getToken) => {
-  const hasGetToken = typeof getToken === 'function';
 
-  const fetchWithAuth = async (endpoint, options = {}) => {
-    // Token opzionale: se esiste getToken lo usiamo, altrimenti andiamo solo di cookie-session
-    let token = null;
-    if (hasGetToken) {
-      try { token = await getToken(); } catch { token = null; }
-    }
 
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    };
-
-    // In cookie-mode NON serve Authorization. Lo lasciamo solo come compat legacy.
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-      credentials: 'include' // ✅ fondamentale: invia/legge i cookies di sessione
-    });
-
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: 'Network error' }));
-      const e = new Error(error.error || `HTTP ${res.status}`);
-      e.status = res.status;
-      e.payload = error;
-      throw e;
-    }
-
-    // Alcune route potrebbero rispondere senza JSON (difensivo)
-    const text = await res.text().catch(() => '');
-    try { return text ? JSON.parse(text) : {}; } catch { return {}; }
-  };
-
-  return {
-    testConnection: async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/health`, { credentials: 'include' });
-        const data = await res.json().catch(() => ({}));
-        return data?.status === 'ok';
-      } catch {
-        return false;
-      }
-    },
-
-    getOrders: (date) => fetchWithAuth(`/admin/orders?date=${encodeURIComponent(date)}`),
-    getSettings: () => fetchWithAuth('/admin/settings'),
-    saveSettings: (data) =>
-      fetchWithAuth('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
-
-    updateOrderStatus: (orderId, status) =>
-      fetchWithAuth(`/admin/orders/${encodeURIComponent(orderId)}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status })
-      }),
-
-    signContract: (data) =>
-      fetchWithAuth('/admin/contract-signatures', {
-        method: 'POST',
-        body: JSON.stringify(data)
-      }),
-
-    createCheckout: (planCode) =>
-      fetchWithAuth('/admin/billing/checkout', {
-        method: 'POST',
-        body: JSON.stringify({ plan_code: planCode })
-      })
-  };
-};
 
 
 // ==================== MAIN ADMIN COMPONENT ====================
 function AdminPanel() {
-  const { user } = useSessionUser();
-  const { getToken, signOut } = useSessionAuth();
-
-  // API Client
+  // API Client (session-cookie)
   const apiRef = useRef(null);
   if (!apiRef.current) {
     apiRef.current = createApiClient();
   }
   const api = apiRef.current;
 
-  // Restaurant info from session user metadata
-  const restaurantSlug = user?.publicMetadata?.restaurant_id || 'pokenjoy-sanremo';
-  const restaurantName = user?.publicMetadata?.restaurant_name || 'Pokenjoy Sanremo';
+  // Restaurant info (temporary defaults until multi-tenant mapping is added)
+  const restaurantSlug = 'pokenjoy-sanremo';
+  const restaurantName = 'Pokenjoy Sanremo';
 
   // ==================== REFS ====================
   const notifTimerRef = useRef(null);
@@ -262,7 +249,7 @@ function AdminPanel() {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ==================== STATI LOCALITÀ ====================
+  // ==================== STA/authTI LOCALITÀ ====================
   const [locations, setLocations] = useState([
     { id: 'sanremo', name: 'Sanremo', fee: 3.50, estimatedTime: '15-20 min', active: true },
     { id: 'poggio', name: 'Poggio', fee: 5.00, estimatedTime: '20-25 min', active: true },
@@ -555,7 +542,7 @@ function AdminPanel() {
                   <span className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></span>
                   {connectionStatus === 'connected' ? 'Connesso' : 'Errore Connessione'}
                 </span>
-                <span className={`text-sm ${TEXT_SECONDARY}`}>👤 {user?.primaryEmailAddress?.emailAddress}</span>
+                <span className={`text-sm ${TEXT_SECONDARY}`}>👤 Sessione attiva</span>                
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -568,12 +555,17 @@ function AdminPanel() {
                 <span>Salva Modifiche</span>
               </button>
               <button
-                onClick={() => signOut()}
-                className={`${BG_TUTTO} border ${BORDER_BLU} p-4 rounded-xl hover:bg-red-900/30 transition-colors`}
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5 text-red-400" />
-              </button>
+  onClick={async () => {
+    try {
+await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch {}
+    window.location.reload();
+  }}
+  className={`${BG_TUTTO} border ${BORDER_BLU} p-4 rounded-xl hover:bg-red-900/30 transition-colors`}
+  title="Logout"
+>
+  <LogOut className="w-5 h-5 text-red-400" />
+</button>
             </div>
           </div>
         </div>
@@ -586,10 +578,9 @@ function AdminPanel() {
               <p className="font-bold text-lg">Salvato con successo!</p>
               <p className="text-sm text-red-100">好运 (Buona Fortuna)</p>
             </div>
-          </div>
-        )}
-
-        {/* TABS */}
+           </span>
+                )}
+              </div>
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
           <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#212121]">
             {[
@@ -1413,143 +1404,106 @@ function AdminPanel() {
 }
 
 // ==================== APP WRAPPER ====================
-// ============================================
-// 🔐 TEMP AUTH (NO CLERK) — cookie-session
-// - If /admin/settings returns 200 => signed in
-// - If 401/403 => signed out (show login button)
-// ============================================
-// ==================== APP WRAPPER ====================
-// ============================================
-// 🔐 TEMP AUTH (NO CLERK) — cookie-session
-// - GET /admin/settings:
-//   - 200 => signed in (we derive restaurant metadata)
-//   - 401/403 => signed out
-// ============================================
-function useSessionUser() {
-  const [state, setState] = useState({
-    isLoaded: false,
-    isSignedIn: false,
-    user: null,
-  });
+function LoginScreen({ onLoggedIn }) {
+  const [email, setEmail] = useState('ordini-lampo@proton.me');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
 
-  useEffect(() => {
-    let alive = true;
-
-    (async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/admin/settings`, {
-          credentials: "include",
-        });
-
-        if (!alive) return;
-
-        if (res.ok) {
-          const data = await res.json().catch(() => ({}));
-
-          // Deriva dati ristorante da /admin/settings (safe fallback)
-          const restaurantSlug =
-            data?.restaurant?.slug ||
-            data?.restaurant?.id ||
-            data?.restaurant_id ||
-            "pokenjoy-sanremo";
-
-          const restaurantName =
-            data?.restaurant?.name ||
-            data?.restaurant_name ||
-            "Pokenjoy Sanremo";
-
-          setState({
-            isLoaded: true,
-            isSignedIn: true,
-            user: {
-              publicMetadata: {
-                restaurant_id: restaurantSlug,
-                restaurant_name: restaurantName,
-              },
-            },
-          });
-          return;
-        }
-
-        if (res.status === 401 || res.status === 403) {
-          setState({ isLoaded: true, isSignedIn: false, user: null });
-          return;
-        }
-
-        setState({ isLoaded: true, isSignedIn: false, user: null });
-      } catch {
-        if (!alive) return;
-        setState({ isLoaded: true, isSignedIn: false, user: null });
-      }
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  return state;
-}
-
-function useSessionAuth() {
-  // In cookie-session, token non serve. Manteniamo compat API client.
-  const getToken = null;
-
-  const signOut = async () => {
+  const doLogin = async (e) => {
+    e.preventDefault();
+    setErr('');
+    setLoading(true);
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch {
-      // ignore
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password }),
+});
+
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+      }
+
+      onLoggedIn?.();
+    } catch (e2) {
+      setErr(e2?.message || 'Login fallito');
     } finally {
-      // ricarica in modo pulito
-      window.location.href = window.location.href;
+      setLoading(false);
     }
-  };
-
-  return { getToken, signOut };
-}
-
-function LoginCard() {
-  const goLogin = () => {
-    const returnTo = encodeURIComponent(window.location.href);
-    window.location.href = `${API_BASE_URL}/auth/login?returnTo=${returnTo}`;
   };
 
   return (
     <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
+      <div className="w-full max-w-md bg-[#1a1a1a] border border-[#608beb] rounded-2xl p-6 shadow-xl">
+        <div className="text-center mb-6">
           <h1 className="text-4xl font-black text-gray-50">
             ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
           </h1>
           <p className="text-gray-400 mt-2">Admin Panel</p>
         </div>
 
-        <div className="shadow-xl rounded-2xl bg-[#1a1a1a] border border-[#608beb] p-6">
-          <p className="text-gray-200 font-bold text-lg mb-2">Accedi</p>
-          <p className="text-gray-400 text-sm mb-4">
-            Login gestito dal backend (session-cookie).
-          </p>
+        <form onSubmit={doLogin} className="space-y-3">
+          <input
+            className="w-full p-4 rounded-xl bg-[#212121] border border-[#608beb] text-gray-50 outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            autoComplete="username"
+          />
+          <input
+            className="w-full p-4 rounded-xl bg-[#212121] border border-[#608beb] text-gray-50 outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            type="password"
+            autoComplete="current-password"
+          />
+
+          {err && <div className="text-red-400 text-sm font-medium">{err}</div>}
+
           <button
-            onClick={goLogin}
-            className="w-full py-3 rounded-xl font-black bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 transition-all"
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 rounded-xl font-black text-xl bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white disabled:opacity-50"
           >
-            🔐 VAI AL LOGIN
+            {loading ? 'Login…' : 'ENTRA'}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
 }
 
 export default function App() {
-  const { isLoaded, isSignedIn } = useSessionUser();
-  if (!isLoaded) return null;
-  if (!isSignedIn) return <LoginCard />;
+  const [authState, setAuthState] = useState({ loading: true, ok: false });
+
+  const check = useCallback(async () => {
+    setAuthState({ loading: true, ok: false });
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, { credentials: 'include' });
+      setAuthState({ loading: false, ok: res.ok });
+    } catch {
+      setAuthState({ loading: false, ok: false });
+    }
+  }, []);
+
+  useEffect(() => { check(); }, [check]);
+
+  if (authState.loading) {
+    return (
+      <div className="min-h-screen bg-[#212121] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb]"></div>
+      </div>
+    );
+  }
+
+  if (!authState.ok) {
+    return <LoginScreen onLoggedIn={check} />;
+  }
+
   return <AdminPanel />;
 }
-
-
