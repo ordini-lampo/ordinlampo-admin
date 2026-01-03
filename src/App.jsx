@@ -489,7 +489,7 @@ function AdminPanel() {
 
     loadInitialData();
     
-    return () => {
+    ) => {
       if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
     };
   }, []);
@@ -504,7 +504,7 @@ function AdminPanel() {
 
   // ==================== LOADING SCREEN ====================
   if (loading && connectionStatus === 'checking') {
-    return (
+    
       <div className={`min-h-screen ${BG_TUTTO} flex items-center justify-center`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb] mx-auto mb-4"></div>
@@ -515,7 +515,7 @@ function AdminPanel() {
   }
 
   // ==================== RENDER ====================
-  return (
+  
     <div className={`min-h-screen ${BG_TUTTO} py-8 px-4 relative overflow-hidden font-sans`}>
       <div className="max-w-6xl mx-auto relative z-20">
         
@@ -650,7 +650,7 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                   <div className="space-y-4">
                     {orders.map(order => {
                       const statusInfo = ORDER_STATUSES[order.status] || ORDER_STATUSES.PENDING;
-                      return (
+                      
                         <div key={order.id} className={`${BG_TUTTO} rounded-2xl border ${BORDER_BLU} overflow-hidden hover:shadow-xl transition-all`}>
                           <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div className="flex items-center gap-4 w-full md:w-auto">
@@ -910,7 +910,7 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                     const isUpgrade = !isActive && piano.id !== 'freedom_80';
                     const risparmio = piano.id !== 'freedom_80' ? Math.round((1 - piano.tariffa / 1.20) * 100) : 0;
                     
-                    return (
+                    
                       <div
                         key={piano.id}
                         onClick={() => {
@@ -1198,191 +1198,303 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
         </div>
       </div>
 
-    );
-      {/* ==================== POPUP UPGRADE ==================== */}
-      {showUpgradePopup && selectedUpgradePlan && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1a1a1a] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-amber-500/50 shadow-2xl">
-            
-            {/* Header Popup */}
-            <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 p-6 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-black text-white">{selectedUpgradePlan.icona} UPGRADE A {selectedUpgradePlan.nome}</h2>
-                <p className="text-amber-100">Risparmia €{((1.20 - selectedUpgradePlan.tariffa) * selectedUpgradePlan.crediti).toFixed(0)} su {selectedUpgradePlan.crediti} ordini</p>
-              </div>
-              <button onClick={() => setShowUpgradePopup(false)} className="text-white hover:bg-amber-800 p-2 rounded-full">
-                <X className="w-6 h-6" />
-              </button>
+{/* ==================== POPUP UPGRADE ==================== */}
+{showUpgradePopup && selectedUpgradePlan && (
+  <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-[#1a1a1a] rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-amber-500/50 shadow-2xl">
+
+      {/* Header Popup */}
+      <div className="sticky top-0 bg-gradient-to-r from-amber-600 to-amber-700 p-6 flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-black text-white">
+            {selectedUpgradePlan.icona} UPGRADE A {selectedUpgradePlan.nome}
+          </h2>
+          <p className="text-amber-100">
+            Risparmia €{((1.20 - selectedUpgradePlan.tariffa) * selectedUpgradePlan.crediti).toFixed(0)} su{" "}
+            {selectedUpgradePlan.crediti} ordini
+          </p>
+        </div>
+        <button
+          onClick={() => setShowUpgradePopup(false)}
+          className="text-white hover:bg-amber-800 p-2 rounded-full"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="p-6 space-y-6">
+
+        {/* Riepilogo Piano */}
+        <div className="bg-[#212121] p-5 rounded-xl border border-gray-700">
+          <h4 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📊 RIEPILOGO ACQUISTO</h4>
+
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className={TEXT_SECONDARY}>Crediti</span>
+              <span className={`font-bold text-xl ${TEXT_PRIMARY}`}>{selectedUpgradePlan.crediti}</span>
             </div>
-            
-            <div className="p-6 space-y-6">
-              
-              {/* Riepilogo Piano */}
-              <div className="bg-[#212121] p-5 rounded-xl border border-gray-700">
-                <h4 className={`font-bold ${TEXT_PRIMARY} mb-3`}>📊 RIEPILOGO ACQUISTO</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className={TEXT_SECONDARY}>Crediti</span>
-                    <span className={`font-bold text-xl ${TEXT_PRIMARY}`}>{selectedUpgradePlan.crediti}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={TEXT_SECONDARY}>Tariffa per ordine</span>
-                    <span className="text-green-400 font-bold text-xl">€{selectedUpgradePlan.tariffa.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className={TEXT_SECONDARY}>Risparmio vs Freedom</span>
-                    <span className="text-green-400 font-bold">-{Math.round((1 - selectedUpgradePlan.tariffa / 1.20) * 100)}%</span>
-                  </div>
-                  {selectedUpgradePlan.radarIncluso && (
-                    <div className="flex justify-between items-center bg-amber-500/10 p-2 rounded-lg">
-                      <span className="text-amber-400 font-bold">📊 RADAR FULL</span>
-                      <span className="text-amber-400 font-bold">INCLUSO</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center bg-green-500/10 p-2 rounded-lg">
-                    <span className="text-green-400">📱 Notifiche WhatsApp</span>
-                    <span className="text-green-400 font-bold">INCLUSO</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xl font-bold pt-3 border-t border-gray-700">
-                    <span className={TEXT_PRIMARY}>TOTALE DA PAGARE</span>
-                    <span className="text-amber-400 text-2xl">€{selectedUpgradePlan.importo?.toFixed(0)}</span>
-                  </div>
-                </div>
+
+            <div className="flex justify-between items-center">
+              <span className={TEXT_SECONDARY}>Tariffa per ordine</span>
+              <span className="text-green-400 font-bold text-xl">€{selectedUpgradePlan.tariffa.toFixed(2)}</span>
+            </div>
+
+            <div className="flex justify-between items-center">
+              <span className={TEXT_SECONDARY}>Risparmio vs Freedom</span>
+              <span className="text-green-400 font-bold">
+                -{Math.round((1 - selectedUpgradePlan.tariffa / 1.20) * 100)}%
+              </span>
+            </div>
+
+            {selectedUpgradePlan.radarIncluso && (
+              <div className="flex justify-between items-center bg-amber-500/10 p-2 rounded-lg">
+                <span className="text-amber-400 font-bold">📊 RADAR FULL</span>
+                <span className="text-amber-400 font-bold">INCLUSO</span>
               </div>
-              
-              {/* Documenti Legali */}
-              <div className="bg-[#212121] p-4 rounded-xl">
-                <h4 className="font-bold text-white mb-3">📄 DOCUMENTI LEGALI</h4>
-                <p className={`text-xs ${TEXT_SECONDARY} mb-3`}>Prima di procedere, leggi attentamente tutti i documenti:</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <a href="https://ordini-lampo.it/contratto-upgrade.html" target="_blank" rel="noopener noreferrer"
-                    className="bg-amber-500/20 border border-amber-500 p-3 rounded-lg text-center hover:bg-amber-500/30 transition-colors">
-                    <span className="text-2xl block mb-1">📜</span>
-                    <p className="text-amber-400 text-xs font-bold">CONTRATTO</p>
-                  </a>
-                  <a href="https://ordini-lampo.it/termini-servizio" target="_blank" rel="noopener noreferrer"
-                    className="bg-[#1a1a1a] border border-gray-600 p-3 rounded-lg text-center hover:bg-[#2a2a2a]">
-                    <span className="text-2xl block mb-1">📋</span>
-                    <p className={`text-xs ${TEXT_SECONDARY}`}>Termini</p>
-                  </a>
-                  <a href="https://ordini-lampo.it/privacy-policy" target="_blank" rel="noopener noreferrer"
-                    className="bg-[#1a1a1a] border border-gray-600 p-3 rounded-lg text-center hover:bg-[#2a2a2a]">
-                    <span className="text-2xl block mb-1">🔒</span>
-                    <p className={`text-xs ${TEXT_SECONDARY}`}>Privacy</p>
-                  </a>
-                </div>
-              </div>
-              
-              {/* Clausole Importanti */}
-              <div className="bg-red-900/30 border border-red-500/50 p-4 rounded-xl">
-                <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5" /> CLAUSOLE IMPORTANTI
-                </h4>
-                <ul className="text-xs text-gray-300 space-y-2">
-                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>I crediti <strong>NON sono rimborsabili</strong> in nessun caso</span></li>
-                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>I crediti sono validi <strong>12 mesi</strong> dalla data di acquisto</span></li>
-                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>Accettando, <strong>rinunci ad azioni di rivalsa</strong> per rimborsi</span></li>
-                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span><strong>Divieto assoluto</strong> di divulgare/vendere dati clienti a terzi</span></li>
-                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>Violazioni privacy → <strong>segnalazione a Garante e A.G.</strong></span></li>
-                  <li className="flex items-start gap-2"><span className="text-red-400">•</span><span>Al termine crediti → passaggio automatico a FREEDOM 150</span></li>
-                </ul>
-              </div>
-              
-              {/* FORMULA DEI TRE SÌ */}
-              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
-                <h4 className="font-bold text-white mb-4 text-center text-lg">📜 DICHIARAZIONI OBBLIGATORIE</h4>
-                <p className={`text-xs ${TEXT_SECONDARY} text-center mb-4`}>
-                  Ai sensi degli artt. 46 e 47 del D.P.R. 445/2000, consapevole delle sanzioni penali previste dall'art. 76 del medesimo decreto e dall'art. 483 c.p. per dichiarazioni mendaci:
-                </p>
-                
-                {/* SÌ 1 */}
-                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl mb-3 border-2 transition-all ${
-                  si1_Lettura ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-blue-500'
-                }`}>
-                  <input type="checkbox" checked={si1_Lettura} onChange={(e) => setSi1_Lettura(e.target.checked)}
-                    className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0" />
-                  <div>
-                    <span className="text-green-400 font-black text-lg">SÌ 1</span>
-                    <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
-                      — <strong>DICHIARO</strong> di aver letto integralmente il Contratto di Acquisto Crediti Prepagati <em>prima</em> della presente sottoscrizione.
-                    </span>
-                  </div>
-                </label>
-                
-                {/* SÌ 2 */}
-                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl mb-3 border-2 transition-all ${
-                  si2_Accettazione ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-amber-500'
-                }`}>
-                  <input type="checkbox" checked={si2_Accettazione} onChange={(e) => setSi2_Accettazione(e.target.checked)}
-                    className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0" />
-                  <div>
-                    <span className="text-amber-400 font-black text-lg">SÌ 2</span>
-                    <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
-                      — <strong>ACCETTO</strong> integralmente e senza riserve tutte le clausole contrattuali, incluse quelle vessatorie ex artt. 1341-1342 c.c. (Artt. 5, 6, 8-bis, 8-ter, 9, 13).
-                    </span>
-                  </div>
-                </label>
-                
-                {/* SÌ 3 */}
-                <label className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${
-                  si3_Consapevolezza ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-red-500'
-                }`}>
-                  <input type="checkbox" checked={si3_Consapevolezza} onChange={(e) => setSi3_Consapevolezza(e.target.checked)}
-                    className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0" />
-                  <div>
-                    <span className="text-red-400 font-black text-lg">SÌ 3</span>
-                    <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
-                      — <strong>SONO CONSAPEVOLE</strong> che le presenti dichiarazioni hanno valore legale, che eventuali dichiarazioni false configurano reato penale (art. 483 c.p.), e che tale circostanza non potrà essere contestata in sede giudiziale.
-                    </span>
-                  </div>
-                </label>
-                
-                {/* Contatore */}
-                <div className="mt-4 text-center">
-                  <span className={`text-lg font-bold ${si1_Lettura && si2_Accettazione && si3_Consapevolezza ? 'text-green-400' : 'text-gray-500'}`}>
-                    {[si1_Lettura, si2_Accettazione, si3_Consapevolezza].filter(Boolean).length}/3 dichiarazioni confermate
-                  </span>
-                </div>
-              </div>
-              
-              {/* Firma Digitale */}
-              <div>
-                <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-2`}>✍️ Firma Digitale (scrivi il tuo nome completo)</label>
-                <input
-                  type="text"
-                  value={signatureName}
-                  onChange={(e) => setSignatureName(e.target.value)}
-                  placeholder="Mario Rossi"
-                  className={`w-full p-4 rounded-xl bg-[#212121] border-2 ${signatureName.length >= 3 ? 'border-green-500' : 'border-gray-600'} ${TEXT_PRIMARY} font-medium text-lg`}
-                />
-                <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>
-                  La firma vale come accettazione formale del contratto ai sensi del Reg. eIDAS. Data: {new Date().toLocaleDateString('it-IT')}
-                </p>
-              </div>
-              
-              {/* Bottone Paga */}
-              <button
-                disabled={!si1_Lettura || !si2_Accettazione || !si3_Consapevolezza || signatureName.length < 3 || upgradeLoading}
-                onClick={handleUpgrade}
-                className={`w-full py-4 rounded-xl font-black text-xl transition-all ${
-                  si1_Lettura && si2_Accettazione && si3_Consapevolezza && signatureName.length >= 3
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/30'
-                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                {upgradeLoading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    Redirect a Stripe...
-                  </span>
-                ) : (
-                  `💳 PAGA €${selectedUpgradePlan.importo} CON STRIPE`
-                )}
-              </button>
-              
-              <p className={`text-xs ${TEXT_SECONDARY} text-center`}>
-                🔒 Pagamento sicuro tramite Stripe. I tuoi dati sono protetti.
-              </p>
+            )}
+
+            <div className="flex justify-between items-center bg-green-500/10 p-2 rounded-lg">
+              <span className="text-green-400">📱 Notifiche WhatsApp</span>
+              <span className="text-green-400 font-bold">INCLUSO</span>
+            </div>
+
+            <div className="flex justify-between items-center text-xl font-bold pt-3 border-t border-gray-700">
+              <span className={TEXT_PRIMARY}>TOTALE DA PAGARE</span>
+              <span className="text-amber-400 text-2xl">€{selectedUpgradePlan.importo?.toFixed(0)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Documenti Legali */}
+        {/* ⬇️ QUI dentro rimetti il tuo contenuto "Documenti Legali" (io non lo invento).
+            Questo placeholder è solo per tenere il JSX valido e non rompere build. */}
+        <div className="bg-[#212121] p-5 rounded-xl border border-gray-700">
+          {/* TODO: Documenti Legali */}
+        </div>
+
+      </div>
+    </div>
+  </div>
+)}
+
+   {/* Documenti Legali */}
+<div className="bg-[#212121] p-4 rounded-xl">
+  <h4 className="font-bold text-white mb-3">📄 DOCUMENTI LEGALI</h4>
+  <p className={`text-xs ${TEXT_SECONDARY} mb-3`}>
+    Prima di procedere, leggi attentamente tutti i documenti:
+  </p>
+
+  <div className="grid grid-cols-3 gap-2">
+    <a
+      href="https://ordini-lampo.it/contratto-upgrade.html"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-amber-500/20 border border-amber-500 p-3 rounded-lg text-center hover:bg-amber-500/30 transition-colors"
+    >
+      <span className="text-2xl block mb-1">📜</span>
+      <p className="text-amber-400 text-xs font-bold">CONTRATTO</p>
+    </a>
+
+    <a
+      href="https://ordini-lampo.it/termini-servizio"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-[#1a1a1a] border border-gray-600 p-3 rounded-lg text-center hover:bg-[#2a2a2a]"
+    >
+      <span className="text-2xl block mb-1">📋</span>
+      <p className={`text-xs ${TEXT_SECONDARY}`}>Termini</p>
+    </a>
+
+    <a
+      href="https://ordini-lampo.it/privacy-policy"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bg-[#1a1a1a] border border-gray-600 p-3 rounded-lg text-center hover:bg-[#2a2a2a]"
+    >
+      <span className="text-2xl block mb-1">🔒</span>
+      <p className={`text-xs ${TEXT_SECONDARY}`}>Privacy</p>
+    </a>
+  </div>
+</div>
+
+{/* Clausole Importanti */}
+<div className="bg-red-900/30 border border-red-500/50 p-4 rounded-xl">
+  <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">
+    <AlertCircle className="w-5 h-5" /> CLAUSOLE IMPORTANTI
+  </h4>
+
+  <ul className="text-xs text-gray-300 space-y-2">
+    <li className="flex items-start gap-2">
+      <span className="text-red-400">•</span>
+      <span>
+        I crediti <strong>NON sono rimborsabili</strong> in nessun caso
+      </span>
+    </li>
+    <li className="flex items-start gap-2">
+      <span className="text-red-400">•</span>
+      <span>
+        I crediti sono validi <strong>12 mesi</strong> dalla data di acquisto
+      </span>
+    </li>
+    <li className="flex items-start gap-2">
+      <span className="text-red-400">•</span>
+      <span>
+        Accettando, <strong>rinunci ad azioni di rivalsa</strong> per rimborsi
+      </span>
+    </li>
+    <li className="flex items-start gap-2">
+      <span className="text-red-400">•</span>
+      <span>
+        <strong>Divieto assoluto</strong> di divulgare/vendere dati clienti a terzi
+      </span>
+    </li>
+    <li className="flex items-start gap-2">
+      <span className="text-red-400">•</span>
+      <span>
+        Violazioni privacy → <strong>segnalazione a Garante e A.G.</strong>
+      </span>
+    </li>
+    <li className="flex items-start gap-2">
+      <span className="text-red-400">•</span>
+      <span>Al termine crediti → passaggio automatico a FREEDOM 150</span>
+    </li>
+  </ul>
+</div>
+
+{/* FORMULA DEI TRE SÌ */}
+<div className="bg-slate-800/50 p-4 rounded-xl border border-slate-600">
+  <h4 className="font-bold text-white mb-4 text-center text-lg">📜 DICHIARAZIONI OBBLIGATORIE</h4>
+
+  <p className={`text-xs ${TEXT_SECONDARY} text-center mb-4`}>
+    Ai sensi degli artt. 46 e 47 del D.P.R. 445/2000, consapevole delle sanzioni penali previste dall'art.
+    76 del medesimo decreto e dall'art. 483 c.p. per dichiarazioni mendaci:
+  </p>
+
+  {/* SÌ 1 */}
+  <label
+    className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl mb-3 border-2 transition-all ${
+      si1_Lettura ? 'bg-green-900/30 border-green-500' : 'bg-[#212121] border-gray-600 hover:border-blue-500'
+    }`}
+  >
+    <input
+      type="checkbox"
+      checked={si1_Lettura}
+      onChange={(e) => setSi1_Lettura(e.target.checked)}
+      className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0"
+    />
+    <div>
+      <span className="text-green-400 font-black text-lg">SÌ 1</span>
+      <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
+        — <strong>DICHIARO</strong> di aver letto integralmente il Contratto di Acquisto Crediti Prepagati{' '}
+        <em>prima</em> della presente sottoscrizione.
+      </span>
+    </div>
+  </label>
+
+  {/* SÌ 2 */}
+  <label
+    className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl mb-3 border-2 transition-all ${
+      si2_Accettazione
+        ? 'bg-green-900/30 border-green-500'
+        : 'bg-[#212121] border-gray-600 hover:border-amber-500'
+    }`}
+  >
+    <input
+      type="checkbox"
+      checked={si2_Accettazione}
+      onChange={(e) => setSi2_Accettazione(e.target.checked)}
+      className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0"
+    />
+    <div>
+      <span className="text-amber-400 font-black text-lg">SÌ 2</span>
+      <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
+        — <strong>ACCETTO</strong> integralmente e senza riserve tutte le clausole contrattuali, incluse quelle
+        vessatorie ex artt. 1341-1342 c.c. (Artt. 5, 6, 8-bis, 8-ter, 9, 13).
+      </span>
+    </div>
+  </label>
+
+  {/* SÌ 3 */}
+  <label
+    className={`flex items-start gap-3 cursor-pointer p-4 rounded-xl border-2 transition-all ${
+      si3_Consapevolezza
+        ? 'bg-green-900/30 border-green-500'
+        : 'bg-[#212121] border-gray-600 hover:border-red-500'
+    }`}
+  >
+    <input
+      type="checkbox"
+      checked={si3_Consapevolezza}
+      onChange={(e) => setSi3_Consapevolezza(e.target.checked)}
+      className="w-6 h-6 mt-0.5 rounded border-2 border-green-500 bg-transparent flex-shrink-0"
+    />
+    <div>
+      <span className="text-red-400 font-black text-lg">SÌ 3</span>
+      <span className={`text-sm ${TEXT_PRIMARY} ml-2`}>
+        — <strong>SONO CONSAPEVOLE</strong> che le presenti dichiarazioni hanno valore legale, che eventuali
+        dichiarazioni false configurano reato penale (art. 483 c.p.), e che tale circostanza non potrà essere
+        contestata in sede giudiziale.
+      </span>
+    </div>
+  </label>
+
+  {/* Contatore */}
+  <div className="mt-4 text-center">
+    <span
+      className={`text-lg font-bold ${
+        si1_Lettura && si2_Accettazione && si3_Consapevolezza ? 'text-green-400' : 'text-gray-500'
+      }`}
+    >
+      {[si1_Lettura, si2_Accettazione, si3_Consapevolezza].filter(Boolean).length}/3 dichiarazioni confermate
+    </span>
+  </div>
+</div>
+
+{/* Firma Digitale */}
+<div>
+  <label className={`block text-sm font-medium ${TEXT_SECONDARY} mb-2`}>
+    ✍️ Firma Digitale (scrivi il tuo nome completo)
+  </label>
+
+  <input
+    type="text"
+    value={signatureName}
+    onChange={(e) => setSignatureName(e.target.value)}
+    placeholder="Mario Rossi"
+    className={`w-full p-4 rounded-xl bg-[#212121] border-2 ${
+      signatureName.length >= 3 ? 'border-green-500' : 'border-gray-600'
+    } ${TEXT_PRIMARY} font-medium text-lg`}
+  />
+
+  <p className={`text-xs ${TEXT_SECONDARY} mt-1`}>
+    La firma vale come accettazione formale del contratto ai sensi del Reg. eIDAS. Data:{' '}
+    {new Date().toLocaleDateString('it-IT')}
+  </p>
+</div>
+
+{/* Bottone Paga */}
+<button
+  disabled={!si1_Lettura || !si2_Accettazione || !si3_Consapevolezza || signatureName.length < 3 || upgradeLoading}
+  onClick={handleUpgrade}
+  className={`w-full py-4 rounded-xl font-black text-xl transition-all ${
+    si1_Lettura && si2_Accettazione && si3_Consapevolezza && signatureName.length >= 3
+      ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/30'
+      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+  }`}
+>
+  {upgradeLoading ? (
+    <span className="flex items-center justify-center gap-2">
+      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+      Redirect a Stripe...
+    </span>
+  ) : (
+    `💳 PAGA €${selectedUpgradePlan.importo} CON STRIPE`
+  )}
+</button>
+
+<p className={`text-xs ${TEXT_SECONDARY} text-center`}>
+  🔒 Pagamento sicuro tramite Stripe. I tuoi dati sono protetti.
+</p>
               
             </div>
           </div>
@@ -1415,14 +1527,14 @@ function LoginScreen({ onLoggedIn }) {
     e.preventDefault();
     setErr('');
     setLoading(true);
-    try {
-    const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-  method: 'POST',
-  credentials: 'include',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password }),
-});
 
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.success) {
@@ -1492,7 +1604,9 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => { check(); }, [check]);
+  useEffect(() => {
+    check();
+  }, [check]);
 
   if (authState.loading) {
     return (
