@@ -516,8 +516,9 @@ if (loading && connectionStatus === 'checking') {
 
 // ==================== RENDER ====================
   
+  return (
     <div className={`min-h-screen ${BG_TUTTO} py-8 px-4 relative overflow-hidden font-sans`}>
-      <div className="max-w-6xl mx-auto relative z-20">
+  <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl p-8 mb-8 border ${BORDER_BLU}`}>
