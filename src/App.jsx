@@ -578,8 +578,8 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
               <p className="font-bold text-lg">Salvato con successo!</p>
               <p className="text-sm text-red-100">好运 (Buona Fortuna)</p>
             </div>
-           </span>
-                )}
+            </div>
+    )}
               </div>
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
           <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#212121]">
