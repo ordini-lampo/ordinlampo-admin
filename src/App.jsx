@@ -648,87 +648,107 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {orders.map(order => {
-                      const statusInfo = ORDER_STATUSES[order.status] || ORDER_STATUSES.PENDING;
-                      
-                        <div key={order.id} className={`${BG_TUTTO} rounded-2xl border ${BORDER_BLU} overflow-hidden hover:shadow-xl transition-all`}>
-                          <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-4 w-full md:w-auto">
-                              <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
-                                order.order_type === 'delivery' ? 'bg-gradient-to-br from-orange-500 to-red-600' : 'bg-gradient-to-br from-[#608beb] to-[#4a7bd9]'
-                              }`}>
-                                {order.order_type === 'delivery' ? '🛵' : '🥡'}
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-3 flex-wrap">
-                                  <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>#{order.order_number || order.id?.slice(0, 8)}</h3>
-                                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusInfo.color}`}>
-                                    {statusInfo.label}
-                                  </span>
-                                </div>
-                                <p className={`text-sm ${TEXT_SECONDARY}`}>
-                                  {order.customer_name || 'Cliente'} • {order.scheduled_time?.substring(0, 5) || '-'}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-3 w-full md:w-auto justify-end">
-                              <div className="text-right mr-2">
-                                <p className="font-black text-2xl text-green-400">
-                                  €{toNumber(order.total_amount || order.total, 0).toFixed(2)}
-                                </p>
-                              </div>
-                              
-                              {statusInfo.next && (
-                                <button
-                                  onClick={() => updateOrderStatus(order.id, statusInfo.next)}
-                                  className="bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white px-4 py-3 rounded-xl font-bold hover:opacity-90 transition-all"
-                                >
-                                  Avanza →
-                                </button>
-                              )}
-                              
-                              {order.customer_phone && (
-                                <a
-                                  href={`tel:${order.customer_phone}`}
-                                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 rounded-xl hover:opacity-90 transition-all"
-                                >
-                                  <Phone className="w-5 h-5" />
-                                </a>
-                              )}
-                              
-                              <button
-                                onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                                className={`${BG_TUTTO} border ${BORDER_BLU} p-3 rounded-xl hover:bg-[#2a2a2a] transition-colors`}
-                              >
-                                {expandedOrderId === order.id ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
-                              </button>
-                            </div>
-                          </div>
+                   {orders.map((order) => {
+  const statusInfo = ORDER_STATUSES[order.status] || ORDER_STATUSES.PENDING;
 
-                          {expandedOrderId === order.id && (
-                            <div className={`p-6 border-t border-[#608beb]/30 bg-[#1a1a1a]`}>
-                              <div className="grid md:grid-cols-2 gap-6">
-                                <div>
-                                  <h4 className={`font-bold ${TEXT_SECONDARY} mb-2 uppercase text-xs`}>Dati Cliente</h4>
-                                  <p className={`font-bold text-lg ${TEXT_PRIMARY}`}>{order.customer_name || 'N/A'}</p>
-                                  <p className={`${TEXT_SECONDARY} flex items-center gap-2`}>
-                                    <Phone className="w-4 h-4" /> {order.customer_phone || 'N/A'}
-                                  </p>
-                                  {order.delivery_address && (
-                                    <p className={`${TEXT_SECONDARY} mt-2`}>📍 {order.delivery_address}</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <h4 className={`font-bold ${TEXT_SECONDARY} mb-2 uppercase text-xs`}>Note</h4>
-                                  <p className={`${TEXT_SECONDARY}`}>{order.notes || order.customer_notes_order || 'Nessuna nota'}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+  return (
+    <div
+      key={order.id}
+      className={`${BG_TUTTO} rounded-2xl border ${BORDER_BLU} overflow-hidden hover:shadow-xl transition-all`}
+    >
+      <div className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div
+            className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-white text-2xl shadow-lg ${
+              order.order_type === 'delivery'
+                ? 'bg-gradient-to-br from-orange-500 to-red-600'
+                : 'bg-gradient-to-br from-[#608beb] to-[#4a7bd9]'
+            }`}
+          >
+            {order.order_type === 'delivery' ? '🛵' : '🥡'}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h3 className={`font-black text-xl ${TEXT_PRIMARY}`}>
+                #{order.order_number || order.id?.slice(0, 8)}
+              </h3>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusInfo.color}`}>
+                {statusInfo.label}
+              </span>
+            </div>
+
+            <p className={`text-sm ${TEXT_SECONDARY}`}>
+              {order.customer_name || 'Cliente'} • {order.scheduled_time?.substring(0, 5) || '-'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+          <div className="text-right mr-2">
+            <p className="font-black text-2xl text-green-400">
+              €{toNumber(order.total_amount || order.total, 0).toFixed(2)}
+            </p>
+          </div>
+
+          {statusInfo.next && (
+            <button
+              onClick={() => updateOrderStatus(order.id, statusInfo.next)}
+              className="bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white px-4 py-3 rounded-xl font-bold hover:opacity-90 transition-all"
+            >
+              Avanza →
+            </button>
+          )}
+
+          {order.customer_phone && (
+            <a
+              href={`tel:${order.customer_phone}`}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-3 rounded-xl hover:opacity-90 transition-all"
+            >
+              <Phone className="w-5 h-5" />
+            </a>
+          )}
+
+          <button
+            onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
+            className={`${BG_TUTTO} border ${BORDER_BLU} p-3 rounded-xl hover:bg-[#2a2a2a] transition-colors`}
+          >
+            {expandedOrderId === order.id ? (
+              <ChevronUp className="w-5 h-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="w-5 h-5 text-gray-400" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      {expandedOrderId === order.id && (
+        <div className={`p-6 border-t border-[#608beb]/30 bg-[#1a1a1a]`}>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h4 className={`font-bold ${TEXT_SECONDARY} mb-2 uppercase text-xs`}>Dati Cliente</h4>
+              <p className={`font-bold text-lg ${TEXT_PRIMARY}`}>{order.customer_name || 'N/A'}</p>
+              <p className={`${TEXT_SECONDARY} flex items-center gap-2`}>
+                <Phone className="w-4 h-4" /> {order.customer_phone || 'N/A'}
+              </p>
+              {order.delivery_address && (
+                <p className={`${TEXT_SECONDARY} mt-2`}>📍 {order.delivery_address}</p>
+              )}
+            </div>
+
+            <div>
+              <h4 className={`font-bold ${TEXT_SECONDARY} mb-2 uppercase text-xs`}>Note</h4>
+              <p className={`${TEXT_SECONDARY}`}>
+                {order.notes || order.customer_notes_order || 'Nessuna nota'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+})}
+
                   </div>
                 )}
               </div>
