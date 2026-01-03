@@ -572,7 +572,7 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
           </div>
         </div>
 
-        {/* Notifica Salvataggio */}
+               {/* Notifica Salvataggio */}
         {showSaveNotification && (
           <div className="fixed top-8 right-8 bg-gradient-to-r from-red-600 to-red-700 text-white px-8 py-5 rounded-2xl shadow-2xl flex items-center gap-4 z-50 border border-[#608beb] animate-bounce">
             <Icons.RedEnvelope className="w-10 h-10" />
@@ -580,9 +580,9 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
               <p className="font-bold text-lg">Salvato con successo!</p>
               <p className="text-sm text-red-100">好运 (Buona Fortuna)</p>
             </div>
-            </div>
-    )}
-              </div>
+          </div>
+        )}
+
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
           <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#212121]">
             {[
