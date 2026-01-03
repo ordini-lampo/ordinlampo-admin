@@ -489,8 +489,8 @@ function AdminPanel() {
 
     loadInitialData();
     
-    ) => {
-      if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+return () => {
+  if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
     };
   }, []);
 
