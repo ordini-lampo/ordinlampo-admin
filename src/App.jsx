@@ -517,8 +517,9 @@ if (loading && connectionStatus === 'checking') {
 // ==================== RENDER ====================
   
   return (
-    <div className={`min-h-screen ${BG_TUTTO} py-8 px-4 relative overflow-hidden font-sans`}>
-  <div className="max-w-6xl mx-auto relative z-20">
+    <>
+      <div className={`min-h-screen ${BG_TUTTO} py-8 px-4 relative overflow-hidden font-sans`}>
+    <div className="max-w-6xl mx-auto relative z-20">
         
         {/* HEADER */}
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl p-8 mb-8 border ${BORDER_BLU}`}>
@@ -1639,9 +1640,10 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#212121] flex items-center justify-center">
         <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb]"></div>
-      </div>
-    );
-  }
+         </div>
+    </>
+  );
+}
 
   if (!authState.ok) {
     return <LoginScreen onLoggedIn={check} />;
