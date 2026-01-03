@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
-  SignedIn, 
-  SignedOut, 
-  SignIn, 
-  useUser, 
-  useAuth 
-} from '@clerk/clerk-react';
-import { 
   Save, Plus, Trash2, Edit2, Eye, EyeOff, DollarSign, MapPin, Clock, 
   Settings, CreditCard, Star, AlertCircle, Phone, ChevronDown, ChevronUp,
   ShoppingBag, TrendingUp, RefreshCw, CheckCircle, LogOut, X
@@ -18,7 +11,73 @@ import {
 // Migrato da Supabase a Clerk/Neon
 // ============================================
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ordini-lampo-api.ordini-lampo.workers.dev';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'https://ordini-lampo-api-production.up.railway.app').replace(/\/+$/, '');
+
+// ============================================
+// API CLIENT (session-cookie auth, no Clerk)
+// ============================================
+const createApiClient = () => {
+  const fetchWithAuth = async (endpoint, options = {}) => {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
+    if (!res.ok) {
+  const error = await res.json().catch(() => ({ error: 'Network error' }));
+  throw new Error(error.error || `HTTP ${res.status}`);
+}
+
+    return res.json();
+  };
+
+  return {
+    testConnection: async () => {
+      try {
+  const res = await fetch(`${API_BASE_URL}/api/v1/health`, {
+  method: 'GET',
+  credentials: 'include',
+});
+  
+        const data = await res.json().catch(() => ({}));
+        return data?.status === 'ok';
+      } catch {
+        return false;
+      }
+    },
+
+    getOrders: (date) => fetchWithAuth(`/api/v1/admin/orders?date=${encodeURIComponent(date)}`),
+    getSettings: () => fetchWithAuth('/api/v1/admin/settings'),
+    saveSettings: (data) =>
+      fetchWithAuth('/api/v1/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }),
+
+    updateOrderStatus: (orderId, status) =>
+      fetchWithAuth(`/api/v1/admin/orders/${encodeURIComponent(orderId)}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+
+    signContract: (data) =>
+      fetchWithAuth('/api/v1/admin/contract-signatures', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+
+    createCheckout: (planCode) =>
+      fetchWithAuth('/api/v1/admin/billing/checkout', {
+        method: 'POST',
+        body: JSON.stringify({ plan_code: planCode }),
+      }),
+  };
+};
+
 
 // 🛡️ HELPER: Numeri sicuri (evita NaN.toFixed crash)
 const toNumber = (value, fallback = 0) => {
@@ -156,62 +215,21 @@ const Icons = {
   )
 };
 
-// ============================================
-// API CLIENT per Clerk
-// ============================================
-const createApiClient = (getToken) => {
-  const fetchWithAuth = async (endpoint, options = {}) => {
-    const token = await getToken();
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-        ...options.headers
-      }
-    });
-    if (!res.ok) {
-      const error = await res.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(error.error || `HTTP ${res.status}`);
-    }
-    return res.json();
-  };
 
-  return {
-    testConnection: async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/health`);
-        const data = await res.json();
-        return data?.status === 'ok';
-      } catch { return false; }
-    },
-    getOrders: (date) => fetchWithAuth(`/admin/orders?date=${date}`),
-    getSettings: () => fetchWithAuth('/admin/settings'),
-    saveSettings: (data) => fetchWithAuth('/admin/settings', { method: 'PUT', body: JSON.stringify(data) }),
-    updateOrderStatus: (orderId, status) => fetchWithAuth(`/admin/orders/${orderId}/status`, { 
-      method: 'PATCH', 
-      body: JSON.stringify({ status }) 
-    }),
-    signContract: (data) => fetchWithAuth('/admin/contract-signatures', { method: 'POST', body: JSON.stringify(data) }),
-    createCheckout: (planCode) => fetchWithAuth('/admin/billing/checkout', { method: 'POST', body: JSON.stringify({ plan_code: planCode }) })
-  };
-};
+
 
 // ==================== MAIN ADMIN COMPONENT ====================
 function AdminPanel() {
-  const { user } = useUser();
-  const { getToken, signOut } = useAuth();
-  
-  // API Client
+  // API Client (session-cookie)
   const apiRef = useRef(null);
   if (!apiRef.current) {
-    apiRef.current = createApiClient(getToken);
+    apiRef.current = createApiClient();
   }
   const api = apiRef.current;
 
-  // Restaurant info from Clerk metadata
-  const restaurantSlug = user?.publicMetadata?.restaurant_id || 'pokenjoy-sanremo';
-  const restaurantName = user?.publicMetadata?.restaurant_name || 'Pokenjoy Sanremo';
+  // Restaurant info (temporary defaults until multi-tenant mapping is added)
+  const restaurantSlug = 'pokenjoy-sanremo';
+  const restaurantName = 'Pokenjoy Sanremo';
 
   // ==================== REFS ====================
   const notifTimerRef = useRef(null);
@@ -230,7 +248,7 @@ function AdminPanel() {
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ==================== STATI LOCALITÀ ====================
+  // ==================== STA/authTI LOCALITÀ ====================
   const [locations, setLocations] = useState([
     { id: 'sanremo', name: 'Sanremo', fee: 3.50, estimatedTime: '15-20 min', active: true },
     { id: 'poggio', name: 'Poggio', fee: 5.00, estimatedTime: '20-25 min', active: true },
@@ -523,7 +541,7 @@ function AdminPanel() {
                   <span className={`w-2 h-2 rounded-full ${connectionStatus === 'connected' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></span>
                   {connectionStatus === 'connected' ? 'Connesso' : 'Errore Connessione'}
                 </span>
-                <span className={`text-sm ${TEXT_SECONDARY}`}>👤 {user?.primaryEmailAddress?.emailAddress}</span>
+                <span className={`text-sm ${TEXT_SECONDARY}`}>👤 Sessione attiva</span>                
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -536,12 +554,17 @@ function AdminPanel() {
                 <span>Salva Modifiche</span>
               </button>
               <button
-                onClick={() => signOut()}
-                className={`${BG_TUTTO} border ${BORDER_BLU} p-4 rounded-xl hover:bg-red-900/30 transition-colors`}
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5 text-red-400" />
-              </button>
+  onClick={async () => {
+    try {
+      await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch {}
+    window.location.reload();
+  }}
+  className={`${BG_TUTTO} border ${BORDER_BLU} p-4 rounded-xl hover:bg-red-900/30 transition-colors`}
+  title="Logout"
+>
+  <LogOut className="w-5 h-5 text-red-400" />
+</button>
             </div>
           </div>
         </div>
@@ -554,10 +577,9 @@ function AdminPanel() {
               <p className="font-bold text-lg">Salvato con successo!</p>
               <p className="text-sm text-red-100">好运 (Buona Fortuna)</p>
             </div>
-          </div>
-        )}
-
-        {/* TABS */}
+           </span>
+                )}
+              </div>
         <div className={`${BG_TUTTO} rounded-2xl shadow-2xl border ${BORDER_BLU} mb-8 overflow-hidden`}>
           <div className="flex border-b-2 border-[#608beb]/30 overflow-x-auto bg-[#212121]">
             {[
@@ -1381,32 +1403,105 @@ function AdminPanel() {
 }
 
 // ==================== APP WRAPPER ====================
-export default function App() {
+function LoginScreen({ onLoggedIn }) {
+  const [email, setEmail] = useState('ordini-lampo@proton.me');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+
+  const doLogin = async (e) => {
+    e.preventDefault();
+    setErr('');
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.success) {
+        throw new Error(data?.message || data?.error || `HTTP ${res.status}`);
+      }
+
+      onLoggedIn?.();
+    } catch (e2) {
+      setErr(e2?.message || 'Login fallito');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <>
-      <SignedOut>
-        <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
-          <div className="w-full max-w-md">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-black text-gray-50">
-                ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
-              </h1>
-              <p className="text-gray-400 mt-2">Admin Panel</p>
-            </div>
-            <SignIn 
-              appearance={{
-                elements: {
-                  rootBox: "mx-auto",
-                  card: "shadow-xl rounded-2xl bg-[#1a1a1a] border border-[#608beb]"
-                }
-              }}
-            />
-          </div>
+    <div className="min-h-screen bg-[#212121] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#1a1a1a] border border-[#608beb] rounded-2xl p-6 shadow-xl">
+        <div className="text-center mb-6">
+          <h1 className="text-4xl font-black text-gray-50">
+            ⚡ ORDINI<span className="text-[#608beb]">LAMPO</span>
+          </h1>
+          <p className="text-gray-400 mt-2">Admin Panel</p>
         </div>
-      </SignedOut>
-      <SignedIn>
-        <AdminPanel />
-      </SignedIn>
-    </>
+
+        <form onSubmit={doLogin} className="space-y-3">
+          <input
+            className="w-full p-4 rounded-xl bg-[#212121] border border-[#608beb] text-gray-50 outline-none"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            autoComplete="username"
+          />
+          <input
+            className="w-full p-4 rounded-xl bg-[#212121] border border-[#608beb] text-gray-50 outline-none"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            type="password"
+            autoComplete="current-password"
+          />
+
+          {err && <div className="text-red-400 text-sm font-medium">{err}</div>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 rounded-xl font-black text-xl bg-gradient-to-r from-[#608beb] to-[#4a7bd9] text-white disabled:opacity-50"
+          >
+            {loading ? 'Login…' : 'ENTRA'}
+          </button>
+        </form>
+      </div>
+    </div>
   );
+}
+
+export default function App() {
+  const [authState, setAuthState] = useState({ loading: true, ok: false });
+
+  const check = useCallback(async () => {
+    setAuthState({ loading: true, ok: false });
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, { credentials: 'include' });
+      setAuthState({ loading: false, ok: res.ok });
+    } catch {
+      setAuthState({ loading: false, ok: false });
+    }
+  }, []);
+
+  useEffect(() => { check(); }, [check]);
+
+  if (authState.loading) {
+    return (
+      <div className="min-h-screen bg-[#212121] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#608beb]"></div>
+      </div>
+    );
+  }
+
+  if (!authState.ok) {
+    return <LoginScreen onLoggedIn={check} />;
+  }
+
+  return <AdminPanel />;
 }
