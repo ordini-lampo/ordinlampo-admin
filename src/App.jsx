@@ -556,7 +556,7 @@ function AdminPanel() {
               <button
   onClick={async () => {
     try {
-      await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch {}
     window.location.reload();
   }}
@@ -1414,12 +1414,13 @@ function LoginScreen({ onLoggedIn }) {
     setErr('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    const res = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password }),
+});
+
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.success) {
@@ -1482,7 +1483,7 @@ export default function App() {
   const check = useCallback(async () => {
     setAuthState({ loading: true, ok: false });
     try {
-      const res = await fetch(`${API_BASE_URL}/auth/me`, { credentials: 'include' });
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, { credentials: 'include' });
       setAuthState({ loading: false, ok: res.ok });
     } catch {
       setAuthState({ loading: false, ok: false });
