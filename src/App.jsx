@@ -1147,52 +1147,69 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
                   </div>
                 </div>
                 
-                {/* TOGGLE CONSEGNA A DOMICILIO */}
-                <div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className={`font-bold ${TEXT_PRIMARY} mb-1`}>🛵 Consegna a Domicilio</h3>
-                      <p className={`text-sm ${TEXT_SECONDARY}`}>
-                        {deliveryEnabled 
-                          ? 'I clienti possono scegliere tra consegna e ritiro' 
-                          : 'Solo ritiro al locale (takeaway)'}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setDeliveryEnabled(!deliveryEnabled);
-                        showNotification();
-                      }}
-                      className={`relative w-16 h-8 rounded-full transition-all ${
-                        deliveryEnabled ? 'bg-green-500' : 'bg-gray-600'
-                      }`}
-                    >
-                      <span className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-all ${
-                        deliveryEnabled ? 'right-1' : 'left-1'
-                      }`}></span>
-                    </button>
-                  </div>
-                  <div className={`mt-4 p-3 rounded-lg ${deliveryEnabled ? 'bg-green-500/10 border border-green-500/30' : 'bg-amber-500/10 border border-amber-500/30'}`}>
-                    <p className={`text-sm font-medium ${deliveryEnabled ? 'text-green-400' : 'text-amber-400'}`}>
-                      {deliveryEnabled ? '✓ Delivery ATTIVO' : '⚠️ Solo TAKEAWAY'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
-                  <h3 className={`font-bold ${TEXT_PRIMARY} mb-4`}>🔗 Stato Connessione</h3>
-                  <div className="flex items-center gap-3">
-                    <span className={`w-4 h-4 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></span>
-                    <span className={connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'}>
-                      {connectionStatus === 'connected' ? 'API Connessa' : 'Errore Connessione'}
-                    </span>
-                  </div>
-                  <p className={`${TEXT_SECONDARY} mt-2 text-sm`}>
-                    Endpoint: {API_BASE_URL}
-                  </p>
-                </div>
-              </div>
-            )}
+{/* TOGGLE CONSEGNA A DOMICILIO */}
+<div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
+  <div className="flex items-center justify-between">
+    <div>
+      <h3 className={`font-bold ${TEXT_PRIMARY} mb-1`}>🛵 Consegna a Domicilio</h3>
+      <p className={`text-sm ${TEXT_SECONDARY}`}>
+        {deliveryEnabled
+          ? 'I clienti possono scegliere tra consegna e ritiro'
+          : 'Solo ritiro al locale (takeaway)'}
+      </p>
+    </div>
+    <button
+      onClick={() => {
+        setDeliveryEnabled(!deliveryEnabled);
+        showNotification();
+      }}
+      className={`relative w-16 h-8 rounded-full transition-all ${
+        deliveryEnabled ? 'bg-green-500' : 'bg-gray-600'
+      }`}
+    >
+      <span
+        className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-all ${
+          deliveryEnabled ? 'right-1' : 'left-1'
+        }`}
+      ></span>
+    </button>
+  </div>
+  <div
+    className={`mt-4 p-3 rounded-lg ${
+      deliveryEnabled
+        ? 'bg-green-500/10 border border-green-500/30'
+        : 'bg-amber-500/10 border border-amber-500/30'
+    }`}
+  >
+    <p
+      className={`text-sm font-medium ${
+        deliveryEnabled ? 'text-green-400' : 'text-amber-400'
+      }`}
+    >
+      {deliveryEnabled ? '✓ Delivery ATTIVO' : '⚠️ Solo TAKEAWAY'}
+    </p>
+  </div>
+</div>
+
+<div className={`${BG_TUTTO} p-6 rounded-2xl border ${BORDER_BLU}`}>
+  <h3 className={`font-bold ${TEXT_PRIMARY} mb-4`}>🔗 Stato Connessione</h3>
+  <div className="flex items-center gap-3">
+    <span
+      className={`w-4 h-4 rounded-full ${
+        connectionStatus === 'connected'
+          ? 'bg-green-500 animate-pulse'
+          : 'bg-red-500'
+      }`}
+    ></span>
+    <span className={connectionStatus === 'connected' ? 'text-green-400' : 'text-red-400'}>
+      {connectionStatus === 'connected' ? 'API Connessa' : 'Errore Connessione'}
+    </span>
+  </div>
+  <p className={`${TEXT_SECONDARY} mt-2 text-sm`}>Endpoint: {API_BASE_URL}</p>
+</div>
+</div>
+}
+
 
           </div>
         </div>
