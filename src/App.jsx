@@ -1523,16 +1523,10 @@ export default function App() {
     );
   }
 
- // 🚧 TEMP (opus-bulldozer): bypass auth per sbloccare UI test
-const BYPASS_AUTH = true;
-
-if (BYPASS_AUTH) {
-  return <AdminPanel />;
-}
-
 if (!authState.ok) {
   return <LoginScreen onLoggedIn={check} />;
 }
 
 return <AdminPanel />;
+
 
