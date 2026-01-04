@@ -1118,7 +1118,6 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
 
               </div>
             )}
-            )}
 
             {/* ==================== TAB IMPOSTAZIONI ==================== */}
             {activeTab === 'settings' && (
@@ -1214,7 +1213,6 @@ await fetch(`${API_BASE_URL}/api/v1/auth/logout`, { method: 'POST', credentials:
   </div>
 
   <p className={`${TEXT_SECONDARY} mt-2 text-sm`}>Endpoint: {API_BASE_URL}</p>
-</div>
 </div>
 )}
 
