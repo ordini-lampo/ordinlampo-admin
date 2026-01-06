@@ -1,0 +1,1207 @@
+# ============================================================
+# SMP4 — APPENDICE C ESTESA: TEMPLATE CODICE ENTERPRISE
+# ============================================================
+# Documento: SMP4-APPENDICE-C-ESTESA-TEMPLATE-CODICE
+# Versione: 1.0
+# Data: 06 Gennaio 2026
+# Relazione: Estensione operativa di SMP4 Appendice C
+# Natura: ESEGUIBILE — contiene codice/template/checklist
+# Autore: Claude Opus 4.5
+# ============================================================
+
+“Questo documento è l’unico satellite operativo ammesso per SMP4 Appendice C.
+Qualsiasi altro template codice non esplicitamente referenziato da SMP4 è da considerarsi NON CONFORME.”
+
+
+> **DICHIARAZIONE DI CONFORMITÀ**
+> Questo documento è **CONFORME A SMP4** — nessuna deroga.
+> Estende SMP4 Appendice C con template operativi.
+> Ogni AI che genera codice per Ordini-Lampo **DEVE** consultare questo documento.
+> **STOP-THE-LINE:** generazione di codice senza consultazione di questo documento.
+
+---
+
+## STACK CANONICO (RIPETIZIONE DIFENSIVA)
+
+| Componente | Tecnologia | Note |
+|------------|------------|------|
+| Backend/Runtime | **Railway** | Node.js / Express |
+| Database | **PostgreSQL su Railway** | Driver `pg` nativo |
+| Frontend | **Netlify** | React/Vite |
+| Billing | **Stripe** | Con circuit breaker OBBLIGATORIO |
+| Monitoring | **Sentry** | Solo osservabilità |
+
+---
+
+# SEZIONE 1: WHITELIST/BLACKLIST OPERATIVE
+
+## 1.1 Import CONSENTITI (Whitelist)
+
+```typescript
+// ================================================================
+// IMPORT CONSENTITI — COPIARE DA QUI
+// ================================================================
+
+// === CORE EXPRESS ===
+import express from 'express';
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
+
+// === DATABASE (PostgreSQL nativo) ===
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+
+// === SICUREZZA ===
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
+
+// === VALIDAZIONE ===
+import { z, ZodSchema, ZodError } from 'zod';
+
+// === PAGAMENTI ===
+import Stripe from 'stripe';
+
+// === MONITORING ===
+import * as Sentry from '@sentry/node';
+
+// === RESILIENZA ===
+import CircuitBreaker from 'opossum';
+
+// === CRYPTO/UTILITY ===
+import crypto from 'crypto';
+import { promisify } from 'util';
+```
+
+## 1.2 Import VIETATI (Blacklist) — STOP-THE-LINE IMMEDIATO
+
+```typescript
+// ================================================================
+// IMPORT VIETATI — SE PRESENTI = STOP-THE-LINE IMMEDIATO
+// ================================================================
+
+// ❌ CLERK — QUALSIASI IMPORT
+import { ClerkProvider } from '@clerk/nextjs';           // VIETATO
+import { useAuth, useUser } from '@clerk/nextjs';        // VIETATO
+import { getAuth } from '@clerk/nextjs/server';          // VIETATO
+import { clerkClient } from '@clerk/clerk-sdk-node';     // VIETATO
+import { withClerkMiddleware } from '@clerk/nextjs/server'; // VIETATO
+
+// ❌ NEON — QUALSIASI IMPORT
+import { neon, neonConfig } from '@neondatabase/serverless'; // VIETATO
+import { Pool } from '@neondatabase/serverless';         // VIETATO
+
+// ❌ CLOUDFLARE — QUALSIASI IMPORT
+import { Hono } from 'hono';                             // VIETATO
+import { Context } from 'hono';                          // VIETATO
+import { cors } from 'hono/cors';                        // VIETATO
+
+// ❌ SUPABASE — QUALSIASI IMPORT
+import { createClient } from '@supabase/supabase-js';    // VIETATO
+import { createServerClient } from '@supabase/ssr';      // VIETATO
+```
+
+## 1.3 Variabili Ambiente CONSENTITE
+
+```bash
+# ================================================================
+# VARIABILI AMBIENTE CONSENTITE — .env.example
+# ================================================================
+
+# === DATABASE (Railway PostgreSQL) ===
+DATABASE_URL=postgres://user:password@host.railway.app:5432/database
+
+# === SESSIONI ===
+SESSION_SECRET=min-32-caratteri-random-generati-con-openssl
+
+# === STRIPE ===
+STRIPE_SECRET_KEY=sk_live_xxxxx
+STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxx
+
+# === SENTRY ===
+SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
+
+# === APP ===
+NODE_ENV=production
+PORT=3000
+
+# === CORS ===
+FRONTEND_URL=https://ordinlampo.netlify.app
+ADMIN_URL=https://ordinlampo-admin.netlify.app
+```
+
+## 1.4 Variabili Ambiente VIETATE — STOP-THE-LINE
+
+```bash
+# ================================================================
+# VARIABILI VIETATE — SE PRESENTI = STOP-THE-LINE
+# ================================================================
+
+# ❌ CLERK
+CLERK_SECRET_KEY=xxx
+CLERK_PUBLISHABLE_KEY=xxx
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=xxx
+CLERK_JWT_KEY=xxx
+
+# ❌ NEON
+NEON_DATABASE_URL=xxx
+DATABASE_URL=postgres://xxx.neon.tech/xxx  # Host neon.tech = VIETATO
+
+# ❌ CLOUDFLARE
+CLOUDFLARE_API_TOKEN=xxx
+CF_ACCOUNT_ID=xxx
+CF_API_KEY=xxx
+
+# ❌ SUPABASE
+SUPABASE_URL=xxx
+SUPABASE_ANON_KEY=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx
+NEXT_PUBLIC_SUPABASE_URL=xxx
+```
+
+---
+
+# SEZIONE 2: STRUTTURA PROGETTO OBBLIGATORIA
+
+```
+ordini-lampo-api/
+├── src/
+│   ├── index.ts                          # Entry point (Sezione 3)
+│   │
+│   ├── config/
+│   │   ├── database.ts                   # Pool PostgreSQL (Sezione 4)
+│   │   ├── stripe.ts                     # Client Stripe
+│   │   └── sentry.ts                     # Inizializzazione Sentry
+│   │
+│   ├── middleware/
+│   │   ├── auth.ts                       # Autenticazione sessione
+│   │   ├── rateLimit.ts                  # Rate limiters (Sezione 6)
+│   │   ├── validation.ts                 # Wrapper Zod (Sezione 5)
+│   │   ├── errorHandler.ts               # Error handler (Sezione 7)
+│   │   └── cors.ts                       # CORS configuration
+│   │
+│   ├── routes/
+│   │   ├── health.ts                     # OBBLIGATORIO (Sezione 8)
+│   │   ├── orders.ts                     # API ordini
+│   │   ├── restaurants.ts                # API ristoranti
+│   │   ├── menu.ts                       # API menu
+│   │   └── webhooks/
+│   │       └── stripe.ts                 # Webhook Stripe
+│   │
+│   ├── services/
+│   │   ├── orderService.ts               # Logica ordini
+│   │   ├── paymentService.ts             # Pagamenti + circuit breaker (Sezione 9)
+│   │   ├── notificationService.ts        # Notifiche WhatsApp
+│   │   └── sessionService.ts             # Gestione sessioni
+│   │
+│   ├── repositories/
+│   │   ├── orderRepository.ts            # Query ordini
+│   │   ├── restaurantRepository.ts       # Query ristoranti
+│   │   └── userRepository.ts             # Query utenti
+│   │
+│   ├── schemas/
+│   │   ├── orderSchema.ts                # Zod schema ordini
+│   │   ├── restaurantSchema.ts           # Zod schema ristoranti
+│   │   └── commonSchema.ts               # Schema comuni
+│   │
+│   └── types/
+│       └── index.ts                      # TypeScript types
+│
+├── package.json
+├── tsconfig.json
+├── .env.example                          # MAI .env in git!
+└── railway.json
+```
+
+---
+
+# SEZIONE 3: ENTRY POINT — src/index.ts
+
+```typescript
+// ================================================================
+// src/index.ts — ENTRY POINT OBBLIGATORIO
+// ================================================================
+// CONFORME A SMP4 — Stack: Railway + Express
+// ================================================================
+
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import * as Sentry from '@sentry/node';
+
+import { pool } from './config/database';
+import { globalLimiter } from './middleware/rateLimit';
+import { errorHandler } from './middleware/errorHandler';
+import { healthRouter } from './routes/health';
+import { ordersRouter } from './routes/orders';
+import { restaurantsRouter } from './routes/restaurants';
+import { stripeWebhookRouter } from './routes/webhooks/stripe';
+
+// ================================================================
+// 1. SENTRY — INIZIALIZZARE PRIMA DI TUTTO
+// ================================================================
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV || 'development',
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+  integrations: [
+    new Sentry.Integrations.Http({ tracing: true }),
+  ],
+});
+
+const app = express();
+
+// ================================================================
+// 2. SECURITY HEADERS — OBBLIGATORIO
+// ================================================================
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'https://api.stripe.com'],
+      frameSrc: ["'self'", 'https://js.stripe.com'],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+}));
+
+// ================================================================
+// 3. CORS — ORIGIN ESPLICITI (MAI WILDCARD IN PROD)
+// ================================================================
+const allowedOrigins: string[] = [
+  process.env.FRONTEND_URL || 'https://ordinlampo.netlify.app',
+  process.env.ADMIN_URL || 'https://ordinlampo-admin.netlify.app',
+];
+
+if (process.env.NODE_ENV === 'development') {
+  allowedOrigins.push('http://localhost:5173');
+  allowedOrigins.push('http://localhost:3000');
+}
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS not allowed'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['X-Request-Id'],
+  maxAge: 86400,
+}));
+
+// ================================================================
+// 4. TRUST PROXY — Per Railway
+// ================================================================
+app.set('trust proxy', 1);
+
+// ================================================================
+// 5. STRIPE WEBHOOK — PRIMA DI BODY PARSING (raw body)
+// ================================================================
+app.use('/webhooks/stripe', stripeWebhookRouter);
+
+// ================================================================
+// 6. BODY PARSING — CON LIMITI
+// ================================================================
+app.use(express.json({ limit: '1mb', strict: true }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+
+// ================================================================
+// 7. RATE LIMITING GLOBALE
+// ================================================================
+app.use(globalLimiter);
+
+// ================================================================
+// 8. REQUEST ID — Per tracciabilità
+// ================================================================
+app.use((req, res, next) => {
+  const requestId = req.headers['x-request-id'] as string || 
+    `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  req.headers['x-request-id'] = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  next();
+});
+
+// ================================================================
+// 9. SENTRY REQUEST HANDLER
+// ================================================================
+app.use(Sentry.Handlers.requestHandler());
+
+// ================================================================
+// 10. ROUTES
+// ================================================================
+app.use('/health', healthRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/restaurants', restaurantsRouter);
+
+// ================================================================
+// 11. 404 HANDLER
+// ================================================================
+app.use((req, res) => {
+  res.status(404).json({
+    error: {
+      code: 'NOT_FOUND',
+      message: `Route ${req.method} ${req.path} not found`,
+    },
+  });
+});
+
+// ================================================================
+// 12. SENTRY ERROR HANDLER
+// ================================================================
+app.use(Sentry.Handlers.errorHandler());
+
+// ================================================================
+// 13. ERROR HANDLER CUSTOM — ULTIMO
+// ================================================================
+app.use(errorHandler);
+
+// ================================================================
+// 14. START SERVER
+// ================================================================
+const PORT = parseInt(process.env.PORT || '3000', 10);
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log('========================================');
+  console.log(`✅ Server started`);
+  console.log(`   Port: ${PORT}`);
+  console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`   Allowed origins: ${allowedOrigins.join(', ')}`);
+  console.log('========================================');
+});
+
+// ================================================================
+// 15. GRACEFUL SHUTDOWN
+// ================================================================
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
+  server.close(async () => {
+    console.log('HTTP server closed');
+    try {
+      await pool.end();
+      console.log('Database pool closed');
+    } catch (err) {
+      console.error('Error closing database pool:', err);
+    }
+    console.log('Graceful shutdown complete');
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// ================================================================
+// 16. UNHANDLED ERRORS
+// ================================================================
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  Sentry.captureException(reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  Sentry.captureException(error);
+  process.exit(1);
+});
+
+export default app;
+```
+
+---
+
+# SEZIONE 4: DATABASE POOL — src/config/database.ts
+
+```typescript
+// ================================================================
+// src/config/database.ts — DATABASE POOL OBBLIGATORIO
+// ================================================================
+// CONFORME A SMP4 — PostgreSQL nativo su Railway
+// ================================================================
+
+import { Pool, PoolClient, QueryResultRow } from 'pg';
+
+// ================================================================
+// POOL CONFIGURATION
+// ================================================================
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  
+  // OBBLIGATORIO: Limiti connessioni
+  max: 20,
+  min: 2,
+  
+  // OBBLIGATORIO: Timeouts
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  
+  // OBBLIGATORIO: SSL in produzione
+  ssl: process.env.NODE_ENV === 'production' 
+    ? { rejectUnauthorized: false } 
+    : false,
+    
+  statement_timeout: 30000,
+});
+
+// ================================================================
+// POOL EVENT HANDLERS
+// ================================================================
+pool.on('connect', () => {
+  console.log('DB: New client connected');
+});
+
+pool.on('error', (err) => {
+  console.error('DB: Unexpected error on idle client', err);
+});
+
+// ================================================================
+// HEALTH CHECK
+// ================================================================
+export async function checkDatabaseHealth(): Promise<{
+  healthy: boolean;
+  latencyMs: number;
+  poolSize: number;
+  idleCount: number;
+  waitingCount: number;
+}> {
+  const startTime = Date.now();
+  
+  try {
+    const result = await pool.query('SELECT 1 as health');
+    const healthy = result.rows[0]?.health === 1;
+    
+    return {
+      healthy,
+      latencyMs: Date.now() - startTime,
+      poolSize: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount,
+    };
+  } catch (error) {
+    console.error('DB health check failed:', error);
+    return {
+      healthy: false,
+      latencyMs: Date.now() - startTime,
+      poolSize: pool.totalCount,
+      idleCount: pool.idleCount,
+      waitingCount: pool.waitingCount,
+    };
+  }
+}
+
+// ================================================================
+// QUERY HELPERS — SEMPRE PREPARED STATEMENTS
+// ================================================================
+export async function query<T extends QueryResultRow = any>(
+  text: string,
+  params?: unknown[]
+): Promise<T[]> {
+  const result = await pool.query<T>(text, params);
+  return result.rows;
+}
+
+export async function queryOne<T extends QueryResultRow = any>(
+  text: string,
+  params?: unknown[]
+): Promise<T | null> {
+  const rows = await query<T>(text, params);
+  return rows[0] || null;
+}
+
+export async function execute(
+  text: string,
+  params?: unknown[]
+): Promise<number> {
+  const result = await pool.query(text, params);
+  return result.rowCount || 0;
+}
+
+// ================================================================
+// TRANSACTION HELPER
+// ================================================================
+export async function withTransaction<T>(
+  callback: (client: PoolClient) => Promise<T>
+): Promise<T> {
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    const result = await callback(client);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// ================================================================
+// ❌ ESEMPI DI COSA NON FARE — STOP-THE-LINE
+// ================================================================
+/*
+// ❌ VIETATO: Query con concatenazione stringhe (SQL Injection!)
+const result = await pool.query(`SELECT * FROM users WHERE id = '${id}'`);
+
+// ❌ VIETATO: Template literal senza parametrizzazione
+const result = await pool.query(`SELECT * FROM users WHERE email = '${email}'`);
+
+// ✅ OBBLIGATORIO: Sempre prepared statements
+const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+*/
+```
+
+---
+
+# SEZIONE 5: VALIDATION MIDDLEWARE — src/middleware/validation.ts
+
+```typescript
+// ================================================================
+// src/middleware/validation.ts — VALIDAZIONE INPUT OBBLIGATORIA
+// ================================================================
+// CONFORME A SMP4 §12.3 — Validazione PRIMA di qualsiasi logica
+// ================================================================
+
+import { Request, Response, NextFunction, RequestHandler } from 'express';
+import { ZodSchema, ZodError, z } from 'zod';
+
+// ================================================================
+// VALIDATE BODY
+// ================================================================
+export function validate<T>(schema: ZodSchema<T>): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validated = await schema.parseAsync(req.body);
+      req.body = validated;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Dati non validi',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message,
+              code: e.code,
+            })),
+          },
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+}
+
+// ================================================================
+// VALIDATE PARAMS
+// ================================================================
+export function validateParams<T>(schema: ZodSchema<T>): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validated = await schema.parseAsync(req.params);
+      req.params = validated as any;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Parametri URL non validi',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message,
+            })),
+          },
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+}
+
+// ================================================================
+// VALIDATE QUERY
+// ================================================================
+export function validateQuery<T>(schema: ZodSchema<T>): RequestHandler {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const validated = await schema.parseAsync(req.query);
+      req.query = validated as any;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Query parameters non validi',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message,
+            })),
+          },
+        });
+        return;
+      }
+      next(error);
+    }
+  };
+}
+
+// ================================================================
+// COMMON SCHEMAS
+// ================================================================
+export const commonSchemas = {
+  uuid: z.string().uuid(),
+  pagination: z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+  }),
+  email: z.string().email().toLowerCase().trim(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/, 'Formato E.164 richiesto'),
+  shortString: z.string().min(1).max(100).trim(),
+  mediumString: z.string().min(1).max(500).trim(),
+  longString: z.string().min(1).max(10000).trim(),
+};
+
+// ================================================================
+// ESEMPIO SCHEMA ORDINE
+// ================================================================
+export const createOrderSchema = z.object({
+  restaurantId: z.string().uuid(),
+  items: z.array(z.object({
+    menuItemId: z.string().uuid(),
+    quantity: z.number().int().min(1).max(99),
+    notes: z.string().max(500).optional(),
+  })).min(1).max(100),
+  customerPhone: commonSchemas.phone,
+  customerName: z.string().min(1).max(100).trim(),
+  deliveryType: z.enum(['pickup', 'delivery']),
+  deliveryAddress: z.string().min(5).max(500).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+```
+
+---
+
+# SEZIONE 6: RATE LIMIT MIDDLEWARE — src/middleware/rateLimit.ts
+
+```typescript
+// ================================================================
+// src/middleware/rateLimit.ts — RATE LIMITING OBBLIGATORIO
+// ================================================================
+// CONFORME A SMP4 §12.1 — Rate limiting per tutti gli endpoint
+// ================================================================
+
+import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
+import { Request } from 'express';
+
+const rateLimitMessage = {
+  error: {
+    code: 'RATE_LIMITED',
+    message: 'Troppe richieste. Riprova più tardi.',
+  },
+};
+
+// ================================================================
+// GLOBAL LIMITER — Tutti gli endpoint
+// ================================================================
+export const globalLimiter: RateLimitRequestHandler = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: rateLimitMessage,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req: Request) => req.path === '/health' || req.path === '/health/live',
+  keyGenerator: (req: Request) => {
+    return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+           req.ip || 'unknown';
+  },
+});
+
+// ================================================================
+// AUTH LIMITER — Endpoint autenticati
+// ================================================================
+export const authLimiter: RateLimitRequestHandler = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
+  message: rateLimitMessage,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const user = (req as any).user;
+    if (user?.id) return `user:${user.id}`;
+    return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || 
+           req.ip || 'unknown';
+  },
+});
+
+// ================================================================
+// CRITICAL LIMITER — Ordini, pagamenti
+// ================================================================
+export const criticalLimiter: RateLimitRequestHandler = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Troppe richieste per questa azione. Attendi un minuto.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const user = (req as any).user;
+    const userId = user?.id || req.ip || 'unknown';
+    return `critical:${userId}:${req.method}:${req.baseUrl}`;
+  },
+});
+
+// ================================================================
+// LOGIN LIMITER — Protezione brute force
+// ================================================================
+export const loginLimiter: RateLimitRequestHandler = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: {
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Troppi tentativi di login. Riprova tra 15 minuti.',
+    },
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => `login:${req.ip || 'unknown'}`,
+  skipSuccessfulRequests: true,
+});
+```
+
+---
+
+# SEZIONE 7: ERROR HANDLER — src/middleware/errorHandler.ts
+
+```typescript
+// ================================================================
+// src/middleware/errorHandler.ts — ERROR HANDLER OBBLIGATORIO
+// ================================================================
+// CONFORME A SMP4 §12.4 — MAI esporre stack trace o dettagli interni
+// ================================================================
+
+import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import * as Sentry from '@sentry/node';
+
+// ================================================================
+// ERROR CODES
+// ================================================================
+export const ERROR_CODES = {
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  FORBIDDEN: 'FORBIDDEN',
+  NOT_FOUND: 'NOT_FOUND',
+  CONFLICT: 'CONFLICT',
+  RATE_LIMITED: 'RATE_LIMITED',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
+  BAD_REQUEST: 'BAD_REQUEST',
+} as const;
+
+export type ErrorCode = keyof typeof ERROR_CODES;
+
+// ================================================================
+// APP ERROR CLASS
+// ================================================================
+export class AppError extends Error {
+  public readonly statusCode: number;
+  public readonly code: ErrorCode;
+  public readonly isOperational: boolean;
+
+  constructor(statusCode: number, code: ErrorCode, message: string, isOperational = true) {
+    super(message);
+    this.statusCode = statusCode;
+    this.code = code;
+    this.isOperational = isOperational;
+    Object.setPrototypeOf(this, AppError.prototype);
+  }
+
+  static badRequest(message: string): AppError {
+    return new AppError(400, 'BAD_REQUEST', message);
+  }
+
+  static unauthorized(message = 'Non autorizzato'): AppError {
+    return new AppError(401, 'UNAUTHORIZED', message);
+  }
+
+  static forbidden(message = 'Accesso negato'): AppError {
+    return new AppError(403, 'FORBIDDEN', message);
+  }
+
+  static notFound(message = 'Risorsa non trovata'): AppError {
+    return new AppError(404, 'NOT_FOUND', message);
+  }
+
+  static conflict(message: string): AppError {
+    return new AppError(409, 'CONFLICT', message);
+  }
+
+  static internal(message = 'Errore interno'): AppError {
+    return new AppError(500, 'INTERNAL_ERROR', message, false);
+  }
+
+  static serviceUnavailable(message = 'Servizio temporaneamente non disponibile'): AppError {
+    return new AppError(503, 'SERVICE_UNAVAILABLE', message);
+  }
+}
+
+// ================================================================
+// ERROR HANDLER MIDDLEWARE
+// ================================================================
+export const errorHandler: ErrorRequestHandler = (
+  err: Error | AppError,
+  req: Request,
+  res: Response,
+  _next: NextFunction
+): void => {
+  const requestId = req.headers['x-request-id'] as string;
+  
+  // 1. LOG INTERNO COMPLETO
+  console.error({
+    timestamp: new Date().toISOString(),
+    requestId,
+    error: {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      ...(err instanceof AppError && { 
+        code: err.code, 
+        statusCode: err.statusCode,
+      }),
+    },
+    request: {
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+    },
+    user: (req as any).user?.id || null,
+  });
+
+  // 2. SENTRY
+  if (!(err instanceof AppError) || !err.isOperational) {
+    Sentry.captureException(err, {
+      extra: { requestId, path: req.path, method: req.method },
+    });
+  }
+
+  // 3. RISPOSTA SANITIZZATA — MAI stack trace
+  if (err instanceof AppError) {
+    res.status(err.statusCode).json({
+      error: { code: err.code, message: err.message, requestId },
+    });
+    return;
+  }
+
+  // Errore generico
+  res.status(500).json({
+    error: {
+      code: 'INTERNAL_ERROR',
+      message: 'Si è verificato un errore interno. Riprova più tardi.',
+      requestId,
+    },
+  });
+};
+```
+
+---
+
+# SEZIONE 8: HEALTH CHECK — src/routes/health.ts
+
+```typescript
+// ================================================================
+// src/routes/health.ts — HEALTH CHECK OBBLIGATORIO
+// ================================================================
+// CONFORME A SMP4 §12.7 — Health check con semantica reale
+// ================================================================
+
+import { Router, Request, Response } from 'express';
+import { checkDatabaseHealth } from '../config/database';
+import { getStripeCircuitStatus } from '../services/paymentService';
+
+export const healthRouter = Router();
+
+// ================================================================
+// HEALTH CHECK COMPLETO
+// ================================================================
+healthRouter.get('/', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  const dbHealth = await checkDatabaseHealth();
+  const stripeStatus = getStripeCircuitStatus();
+  
+  const health = {
+    status: dbHealth.healthy ? 'healthy' : 'unhealthy',
+    timestamp: new Date().toISOString(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    checks: {
+      database: {
+        status: dbHealth.healthy ? 'connected' : 'disconnected',
+        latencyMs: dbHealth.latencyMs,
+        pool: {
+          total: dbHealth.poolSize,
+          idle: dbHealth.idleCount,
+          waiting: dbHealth.waitingCount,
+        },
+      },
+      stripe: {
+        circuitBreaker: stripeStatus.isOpen ? 'open' : 'closed',
+      },
+    },
+    uptime: process.uptime(),
+    responseTimeMs: Date.now() - startTime,
+  };
+
+  // OBBLIGATORIO: 503 se DB è giù
+  res.status(dbHealth.healthy ? 200 : 503).json(health);
+});
+
+// ================================================================
+// LIVENESS PROBE
+// ================================================================
+healthRouter.get('/live', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'alive', timestamp: new Date().toISOString() });
+});
+
+// ================================================================
+// READINESS PROBE
+// ================================================================
+healthRouter.get('/ready', async (req: Request, res: Response) => {
+  const dbHealth = await checkDatabaseHealth();
+  res.status(dbHealth.healthy ? 200 : 503).json({
+    ready: dbHealth.healthy,
+    timestamp: new Date().toISOString(),
+  });
+});
+```
+
+---
+
+# SEZIONE 9: CIRCUIT BREAKER STRIPE — src/services/paymentService.ts
+
+```typescript
+// ================================================================
+// src/services/paymentService.ts — PAGAMENTI CON CIRCUIT BREAKER
+// ================================================================
+// CONFORME A SMP4 §12.2 — Circuit breaker OBBLIGATORIO su Stripe
+// ================================================================
+
+import Stripe from 'stripe';
+import CircuitBreaker from 'opossum';
+import * as Sentry from '@sentry/node';
+import { AppError } from '../middleware/errorHandler';
+
+// ================================================================
+// STRIPE CLIENT
+// ================================================================
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2023-10-16',
+  timeout: 10000,
+  maxNetworkRetries: 2,
+});
+
+// ================================================================
+// CIRCUIT BREAKER OPTIONS (SMP4 §12.2)
+// ================================================================
+const breakerOptions: CircuitBreaker.Options = {
+  timeout: 10000,
+  errorThresholdPercentage: 50,
+  resetTimeout: 60000,
+  volumeThreshold: 5,
+  rollingCountTimeout: 30000,
+};
+
+// ================================================================
+// CREATE PAYMENT INTENT
+// ================================================================
+const createPaymentIntentBreaker = new CircuitBreaker(
+  async (params: Stripe.PaymentIntentCreateParams) => stripe.paymentIntents.create(params),
+  breakerOptions
+);
+
+createPaymentIntentBreaker.on('open', () => {
+  console.error('⚠️ CIRCUIT BREAKER STRIPE: APERTO');
+  Sentry.captureMessage('Stripe circuit breaker opened', { level: 'warning' });
+});
+
+createPaymentIntentBreaker.on('halfOpen', () => {
+  console.log('Circuit breaker Stripe: HALF-OPEN');
+});
+
+createPaymentIntentBreaker.on('close', () => {
+  console.log('✅ Circuit breaker Stripe: CHIUSO');
+});
+
+// ================================================================
+// EXPORTED FUNCTIONS
+// ================================================================
+export async function createPaymentIntent(
+  amount: number,
+  currency: string = 'eur',
+  metadata?: Record<string, string>
+): Promise<Stripe.PaymentIntent> {
+  try {
+    return await createPaymentIntentBreaker.fire({
+      amount,
+      currency,
+      metadata,
+      automatic_payment_methods: { enabled: true },
+    });
+  } catch (error) {
+    if ((error as Error).message?.includes('Breaker is open')) {
+      throw AppError.serviceUnavailable('Servizio pagamenti temporaneamente non disponibile');
+    }
+    throw error;
+  }
+}
+
+export async function getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
+  return stripe.paymentIntents.retrieve(paymentIntentId);
+}
+
+export function getStripeCircuitStatus(): { isOpen: boolean; stats: CircuitBreaker.Stats } {
+  return {
+    isOpen: createPaymentIntentBreaker.opened,
+    stats: createPaymentIntentBreaker.stats,
+  };
+}
+```
+
+---
+
+# SEZIONE 10: CHECKLIST PRE-COMMIT OBBLIGATORIA
+
+## 10.1 Stack Lock (P0)
+
+```markdown
+- [ ] ZERO import da `@clerk/*`
+- [ ] ZERO import da `@neondatabase/*`
+- [ ] ZERO import da `hono`
+- [ ] ZERO import da `@supabase/*`
+- [ ] Database: solo `import { Pool } from 'pg'`
+- [ ] HTTP: solo pattern Express
+- [ ] ZERO env vars CLERK_*, NEON_*, CF_*, SUPABASE_*
+- [ ] DATABASE_URL punta a Railway (non neon.tech)
+```
+
+## 10.2 Sicurezza (P0)
+
+```markdown
+- [ ] Error handler NON espone stack trace
+- [ ] Error handler NON espone query SQL
+- [ ] Error handler NON espone path filesystem
+- [ ] TUTTI gli endpoint hanno validazione Zod
+- [ ] Validazione PRIMA di logica business
+- [ ] ZERO concatenazione stringhe in SQL
+- [ ] TUTTE le query usano prepared statements
+- [ ] CORS con origin espliciti
+- [ ] Cookie con HttpOnly + Secure
+```
+
+## 10.3 Affidabilità (P0)
+
+```markdown
+- [ ] Health check `/health` presente
+- [ ] Health restituisce 503 se DB giù
+- [ ] Rate limiter globale attivo
+- [ ] Rate limiter su endpoint critici
+- [ ] Circuit breaker su Stripe
+- [ ] Timeout espliciti su chiamate esterne
+```
+
+## 10.4 Struttura (P1)
+
+```markdown
+- [ ] Entry point in src/index.ts
+- [ ] Config in src/config/
+- [ ] Middleware in src/middleware/
+- [ ] File naming: camelCase.ts
+- [ ] Variabili: camelCase
+- [ ] Classi: PascalCase
+- [ ] Costanti: SCREAMING_SNAKE_CASE
+```
+
+## 10.5 Comando Verifica
+
+```bash
+# Stack check
+grep -r "@clerk\|@neon\|cloudflare\|@supabase\|hono" src/
+# Output atteso: NESSUNA RIGA
+
+# Env check
+grep -r "CLERK_\|NEON_\|CF_\|SUPABASE_" src/ .env*
+# Output atteso: NESSUNA RIGA
+
+# SQL injection check
+grep -r '`SELECT\|`INSERT\|`UPDATE\|`DELETE' src/
+# Output atteso: NESSUNA RIGA
+
+# Build check
+npm run build
+# Output atteso: 0 errori
+```
+
+---
+
+# SEZIONE 11: ANTI-PATTERN — RIFIUTO OBBLIGATORIO
+
+| Richiesta | Risposta AI OBBLIGATORIA |
+|-----------|--------------------------|
+| "Usa Clerk per l'auth" | **RIFIUTO:** Clerk è P0 (SMP4 §4.3). Uso auth nativa con sessioni. |
+| "Connettiti a Neon" | **RIFIUTO:** Neon è P0 (SMP4 §4.3). Uso DATABASE_URL Railway. |
+| "Deploy su Cloudflare" | **RIFIUTO:** Cloudflare è P0 (SMP4 §4.3). Deploy su Railway. |
+| "Usa Supabase" | **RIFIUTO:** Supabase è P0 (SMP4 §4.3). Uso PostgreSQL Railway. |
+| "Fai un bypass temporaneo" | **RIFIUTO:** Bypass vietati (SMP4 §6.3). |
+| "Commenta il vecchio codice" | **RIFIUTO:** Codice commentato vietato (SMP4 §5.3). |
+| "Metti origin: '*' nel CORS" | **RIFIUTO:** CORS wildcard vietato (SMP4 §12.5.3). |
+| "Mostra stack trace all'utente" | **RIFIUTO:** Stack trace vietato (SMP4 §12.4.1). |
+| "Salta la validazione" | **RIFIUTO:** Input non validato vietato (SMP4 §12.3). |
+| "Logga la password per debug" | **RIFIUTO:** Logging segreti vietato (SMP4 §12.8.2). |
+
+---
+
+# FINE DOCUMENTO SATELLITE
+
+```
++==============================================================+
+|                                                               |
+|  SMP4-APPENDICE-C-ESTESA-TEMPLATE-CODICE v1.0                |
+|                                                               |
+|  Creato: 06 Gennaio 2026                                      |
+|  Autore: Claude Opus 4.5                                      |
+|  Conforme a: SMP4 (GUARDRAIL)                                 |
+|                                                               |
+|  Sezioni: 11                                                  |
+|  Template codice: 7                                           |
+|  Checklist items: 40+                                         |
+|                                                               |
++==============================================================+
+```

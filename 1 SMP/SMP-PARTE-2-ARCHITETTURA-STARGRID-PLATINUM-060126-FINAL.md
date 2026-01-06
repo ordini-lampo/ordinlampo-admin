@@ -1,0 +1,2235 @@
+# SMP PARTE 2 — ARCHITETTURA VINCOLANTE (NO CODICE IMPLEMENTATIVO)
+## ORDINI-LAMPO · STARGRID
+
+**Timestamp:** 06/01/26 19:05  
+**Stato:** CANONICO · AUDITABILE · AI-EXECUTABLE  
+**Metodo:** BULLDOZER-AI-EXEC (vincolo assoluto)  
+**Decisione canonica:** SMP2 definisce **COSA deve esistere** (architettura), non **COME si usa** (implementazione).  
+**Regola audit:** SQL DDL/Trigger/Function/Policy = **ARCHITETTURA (DEVE RESTARE)**. TypeScript/JS/config/handlers = **IMPLEMENTAZIONE (VIETATA)**.
+
+---
+
+CLAUSOLA DI SUBORDINAZIONE GERARCHICA (VINCOLANTE)
+
+Questo documento è subordinato gerarchicamente ed esclusivamente a SMP1 (Contratto).
+In caso di conflitto, SMP1 prevale sempre.
+
+SMP2 definisce l’ARCHITETTURA VINCOLANTE del progetto.
+Nessun altro SMP può introdurre, modificare, estendere o sostituire
+architetture, stack, runtime, servizi o varianti in contrasto con SMP2.
+
+Qualsiasi implementazione, interpretazione o scelta tecnica
+non conforme a SMP2 è NON VALIDA (STOP-THE-LINE).
+
+La numerazione SMP non implica precedenza logica o temporale.
+
+Questa clausola deve essere considerata sempre letta e applicata
+prima di qualsiasi altra sezione del documento.
+
+---
+
+
+
+## A.1 — DICHIARAZIONE DI NATURA (NON INTERPRETABILE)
+
+SMP2 è una **gabbia architetturale vincolante** per AI che scrive codice.
+
+Ambiguità = FAIL.
+
+---
+
+## A.2 — STACK-LOCK ARCHITETTURALE (P0)
+
+Stack unico consentito (immutabile):
+- Railway (backend + runtime)
+- PostgreSQL su Railway
+- Netlify (frontend)
+- Stripe (billing)
+- Sentry (osservabilità)
+
+Qualsiasi deviazione = BUG P0.
+
+---
+
+## A.3 — TOPOLOGIA LOGICA CONSENTITA
+
+Frontend (Netlify) → HTTPS → Backend (Railway) → PostgreSQL (Railway)  
+Stripe → Webhook → Backend (Railway)  
+Sentry → osservabilità
+
+Vietato: accesso DB dal client, edge runtime, DB esterni.
+
+---
+
+## A.4 — PRINCIPI (DEFAULT-DENY)
+
+Obbligatorio:
+- Default-Deny
+- Separation of Concerns
+- Single Source of Truth
+- No Hidden State
+- Versioning e contratti stabili (quando previsto)
+
+---
+
+## A.5 — BOUNDARY CONTRACT FRONTEND ↔ BACKEND
+
+Consentito:
+- REST versionato
+- cookie sessione + CSRF per mutazioni (dettagli nei Libretti)
+
+Vietato:
+- segreti nel frontend
+- bypass auth/role gate
+- token persistenti non autorizzati
+
+---
+
+## A.6 — MODULARITÀ (21 MODULI)
+
+Moduli canonici: GOV, COR, PAS, ENG, MNU, MSG, VAU, SHW, RAD, NTF, TRF, REF, OPS, GRD, LEG, AUD, BAK, MIG, TST, DOC, MON  
+Vietato creare moduli extra senza update canonico + audit PASS.
+
+---
+
+## A.7 — DIPENDENZE (WAVE 0–6)
+
+Wave/dipendenze vincolanti.  
+Vietato implementare wave successive senza prerequisiti PASS.
+
+---
+
+## A.8 — DATA ARCHITECTURE (VINCOLI)
+
+PostgreSQL è storage primario.  
+È vietato introdurre storage secondari non autorizzati.
+
+---
+
+## A.9 — AUTH / SESSIONI / CSRF (VINCOLI)
+
+Vincoli architetturali: session-cookie + CSRF per mutazioni.  
+STOP se endpoint admin risponde senza sessione valida.
+
+---
+
+## A.10 — MULTI-TENANCY (VINCOLI)
+
+Isolamento tenant obbligatorio.  
+STOP se lettura cross-tenant è possibile.
+
+---
+
+## A.11 — OSSERVABILITÀ (VINCOLI)
+
+Sentry sì. Vietato loggare PII/segreti.
+
+---
+
+## A.12 — BILLING (VINCOLI)
+
+Stripe fonte di verità.  
+STOP se feature premium attivabile senza stato billing valido.
+
+---
+
+## A.13 — LISTA NERA (P0)
+
+Vietato introdurre:
+- runtime edge
+- DB esterni a Railway
+- auth provider esterni non autorizzati
+- hosting alternativi non previsti
+- storage esterni non previsti
+
+---
+
+## A.14 — CHECKLIST CONFORMITÀ SMP2
+
+[ ] Presente schema SQL DDL (CREATE TYPE/TABLE/INDEX)  
+[ ] Presenti trigger/function SQL architetturali  
+[ ] Presenti policy RLS (tenant-scoped)  
+[ ] Presenti diagrammi ASCII / tabelle mapping  
+[ ] ZERO snippet TS/JS/handlers/config deploy  
+[ ] ZERO riferimenti legacy (Auth provider esterno vietato/DB ESTERNO/EDGE PROVIDER/BaaS ESTERNO ecc.)  
+[ ] Dimensione documento coerente (target ~1800–2000 righe, salvo ragione esplicita)
+
+Se una casella = NO → FAIL.
+
+---
+
+## A.15 — ESITO FORMALE
+
+**ESITO:** PASS (autoverifica interna)  
+Domanda: “Un’AI che legge solo SMP2 sa esattamente quali tabelle esistono, campi e relazioni?”  
+Risposta: **SÌ** (se B.4–B.6 sono presenti).
+
+---
+
+# SEZIONE B — CONTENUTO ARCHITETTURALE (DDL SQL + DIAGRAMMI + MAPPING)
+
+Nota: i blocchi di implementazione (TS/JS/config/handlers) sono stati rimossi e sostituiti da placeholder vincolanti verso i Libretti.
+
+---
+
+# ============================================================
+# STARGRID MASTER PROJECT (SMP) - PARTE 2/5
+# ============================================================
+# SEZIONE B: ARCHITETTURA + CODICE SORGENTE COMPLETO
+# ============================================================
+# Codice: SMP-V7.0-INTEGRATED
+# Data: 24 Dicembre 2025
+# Autori: Claude Opus 4.5 + ChatGPT 5.2 BULLDOZER + Claude Integration
+# Committente: Paolo Pizzo - Founder Ordini-Lampo
+# Target righe questa sezione: ~1800
+# ============================================================
+
+
+---
+
+# INDICE PARTE 2 - ARCHITETTURA
+
+
+**[DIAGRAMMA ASCII — ARCHITETTURA]**
++==============================================================+
+|           SMP PARTE 2/5 - SEZIONE B: ARCHITETTURA            |
++==============================================================+
+|                                                              |
+|  B.1   Stack Tecnologico Completo                            |
+|  B.2   Architettura Logica                                   |
+|  B.3   Architettura Fisica (Deployment)                      |
+|  B.4   Schema Database Completo (20+ tabelle)                |
+|  B.5   Functions e Triggers (15+ core)                       |
+|  B.6   RLS Policies (30+ policies)                           |
+|  B.7   Pattern Obbligatori (con codice)                      |
+|  B.8   API Design e Versioning                               |
+|  B.9   PII Data Flow (GDPR)                                  |
+|  B.10  Security Architecture                                 |
+|  B.11  Integration Architecture                              |
+|  B.12  Caching Strategy                                      |
+|  B.13  Queue Architecture                                    |
+|  B.14  State Machine Design                                  |
+|  B.15  Guardrail Runtime                                     |
+|                                                              |
++==============================================================+
+
+
+
+---
+
+## B.1 STACK TECNOLOGICO COMPLETO
+
+### Overview Stack
+
+
+**[DIAGRAMMA ASCII — ARCHITETTURA]**
++---------------------------------------------------------------------+
+|                         FRONTEND                                     |
+|  +--------------+  +--------------+  +--------------+               |
+|  |   Landing    |  |  Customer    |  |    Admin     |               |
+|  |   (HTML)     |  |   (React)    |  |   (React)    |               |
+|  +------+-------+  +------+-------+  +------+-------+               |
+|         |                 |                 |                        |
+|         +-----------------+-----------------+                        |
+|                           | HTTPS                                    |
++---------------------------+------------------------------------------+
+                            |
++---------------------------+------------------------------------------+
+|                           v                                          |
+|  +---------------------------------------------------------------+  |
+|  |                  Edge provider vietato [NON USATO] EDGE                              |  |
+|  |  +----------+  +----------+  +----------+  +----------+       |  |
+|  |  |   WAF    |  |   Rate   |  |  Cache   |  |   DNS    |       |  |
+|  |  |          |  |  Limit   |  |          |  |          |       |  |
+|  |  +----+-----+  +----+-----+  +----+-----+  +----+-----+       |  |
+|  |       +-------------+-------------+-------------+              |  |
+|  |                     |             |                            |  |
+|  |                     v             v                            |  |
+|  |  +---------------------------------------------------------------+
+|  |  |            Edge provider vietato [NON USATO] Edge runtime vietato [NON USATO]                              |  |
+|  |  |  +----------+  +----------+  +----------+                  |  |
+|  |  |  |   API    |  |   Auth   |  |  Queue   |                  |  |
+|  |  |  |  Router  |  |Middleware|  | Consumer |                  |  |
+|  |  |  +----+-----+  +----+-----+  +----+-----+                  |  |
+|  |  |       +-------------+-------------+                        |  |
+|  |  +---------------------------------------------------------------+
+|  +---------------------------------------------------------------+  |
+|                           |                                          |
+|                    BACKEND                                           |
++---------------------------+------------------------------------------+
+                            |
++---------------------------+------------------------------------------+
+|                           v                                          |
+|  +---------------------------------------------------------------+  |
+|  |                    DATA LAYER                                 |  |
+|  |  +--------------+      +--------------+                       |  |
+|  |  |  Railway managed connection pooling (VIETATO)  |----->|    Railway PostgreSQL      |                       |  |
+|  |  |  (Pooling)   |      |  PostgreSQL  |                       |  |
+|  |  +--------------+      | EU Frankfurt |                       |  |
+|  |                        +--------------+                       |  |
+|  |  +--------------+      +--------------+                       |  |
+|  |  | Edge provider vietato [NON USATO]   |      |    Auth provider esterno vietato     |                       |  |
+|  |  |   QUEUES     |      |   (Auth)     |                       |  |
+|  |  +--------------+      +--------------+                       |  |
+|  +---------------------------------------------------------------+  |
+|                    INTEGRATIONS                                      |
++----------------------------------------------------------------------+
+                            |
++---------------------------+------------------------------------------+
+|                           v                                          |
+|  +--------------+  +--------------+  +--------------+               |
+|  |    WATI      |  |  TELEGRAM    |  |   STRIPE     |               |
+|  |  WhatsApp    |  |    Bot       |  |  Payments    |               |
+|  +--------------+  +--------------+  +--------------+               |
+|                    EXTERNAL SERVICES                                 |
++----------------------------------------------------------------------+
+
+
+### Dettaglio Componenti
+
+| Layer | Componente | Tecnologia | Versione | Ruolo |
+|-------|------------|------------|----------|-------|
+| **Frontend** | Landing | HTML/CSS/JS | ES2022 | Marketing, onboarding |
+| | Customer App | React + Vite | 18.x | Ordinazione cliente |
+| | Admin Panel | React + Vite | 18.x | Gestione ristorante |
+| | Hosting | Netlify | - | CDN, deploy |
+| | Edge runtime vietato [NON USATO] | Edge provider vietato [NON USATO] Edge runtime vietato [NON USATO] | - | API, logica |
+| **Data** | Database | Railway PostgreSQL PostgreSQL | 16.x | Storage primario |
+| | Pooling | Railway managed connection pooling (VIETATO) | - | Connection pooling |
+| | Auth | Auth provider esterno vietato | - | Authentication |
+| **External** | WhatsApp | WATI | - | Messaggistica primaria |
+| | Telegram | Bot API | - | Messaggistica fallback |
+| | Payments | Stripe | - | Billing B2B |
+| **Monitoring** | Errors | Sentry | - | Error tracking |
+
+
+---
+
+## B.2 ARCHITETTURA LOGICA
+
+### Domain Model
+
+
+**[DIAGRAMMA ASCII — ARCHITETTURA]**
++---------------------------------------------------------------------+
+|                      TENANT BOUNDARY                                 |
+|  +---------------------------------------------------------------+  |
+|  |  +----------+       +------------+       +----------+         |  |
+|  |  |  TENANT  |-------|  RESTAURANT |-------|   USER   |         |  |
+|  |  |          |  1:N  |            |  1:N  |          |         |  |
+|  |  +----------+       +-----+------+       +----------+         |  |
+|  |                           |                                   |  |
+|  |           +---------------+---------------+                   |  |
+|  |           |               |               |                   |  |
+|  |           v               v               v                   |  |
+|  |      +----------+    +----------+    +----------+             |  |
+|  |      |   MENU   |    |  ORDER   |    | CREDITS  |             |  |
+|  |      +----+-----+    +----+-----+    +----+-----+             |  |
+|  |           |               |               |                   |  |
+|  |           v               v               v                   |  |
+|  |      +----------+    +----------+    +----------+             |  |
+|  |      |  ITEMS   |    |  ITEMS   |    |  LEDGER  |             |  |
+|  |      +----------+    +----------+    +----------+             |  |
+|  +---------------------------------------------------------------+  |
+|  RLS ENFORCED: Ogni query filtrata per tenant_id/restaurant_id      |
++---------------------------------------------------------------------+
+
+
+### Bounded Contexts
+
+| Context | Aggregates | Responsabilita |
+|---------|------------|----------------|
+| **Identity** | Tenant, User, Role | Chi sei, cosa puoi fare |
+| **Catalog** | Menu, Category, Item | Cosa vendiamo |
+| **Ordering** | Order, OrderItem | Processo ordine |
+| **Billing** | Credits, Transaction, Ledger | Soldi |
+| **Messaging** | Message, DeliveryAttempt | Comunicazione |
+| **Analytics** | Event, Metric | Osservazione |
+
+
+---
+
+## B.3 ARCHITETTURA FISICA (DEPLOYMENT)
+
+### Ambienti
+
+| Ambiente | URL API (backend) | URL Frontend | Database | Note |
+|----------|-------------------|-------------|----------|------|
+| **Production** | https://ordini-lampo-api-production.up.railway.app | https://ordinlampo-admin.netlify.app | Railway PostgreSQL (production) | Live |
+| **Staging** | **TBD — STOP finché non configurato** | **TBD** | Railway PostgreSQL (staging) | Pre-prod |
+
+### Edge provider vietato [NON USATO] Edge runtime vietato [NON USATO] Configuration (TOOLING EDGE (VIETATO))
+
+
+### [IMPLEMENTAZIONE RIMOSSA — VIETATO IN SMP2]
+- **Tipo:** codice/toml
+- **Dimensione stimata:** ~119 righe
+- **Motivo:** SMP2 è ARCHITETTURA VINCOLANTE. L’implementazione vive SOLO nei Libretti.
+- **Azione:** spostare questo blocco nel Libretto del modulo competente (es. COR/ENG/OPS/TST).
+
+**Vincoli architetturali (obbligatori):**
+- Stack-lock: Railway + PostgreSQL (Railway) + Netlify + Stripe + Sentry.
+- Vietato introdurre runtime/DB/servizi non previsti.
+- Vietato segreti nel frontend.
+- Auth/CSRF/RLS secondo Libretti e SMP1.
+
+**STOP-THE-LINE:**
+- Se questo blocco richiede vendor non consentito → STOP.
+- Se bypassa auth/role-gate o scoping tenant → STOP.
+
+
+
+### TypeScript Entry Point (src/index.ts)
+
+
+### [IMPLEMENTAZIONE RIMOSSA — VIETATO IN SMP2]
+- **Tipo:** codice/typescript
+- **Dimensione stimata:** ~164 righe
+- **Motivo:** SMP2 è ARCHITETTURA VINCOLANTE. L’implementazione vive SOLO nei Libretti.
+- **Azione:** spostare questo blocco nel Libretto del modulo competente (es. COR/ENG/OPS/TST).
+
+**Vincoli architetturali (obbligatori):**
+- Stack-lock: Railway + PostgreSQL (Railway) + Netlify + Stripe + Sentry.
+- Vietato introdurre runtime/DB/servizi non previsti.
+- Vietato segreti nel frontend.
+- Auth/CSRF/RLS secondo Libretti e SMP1.
+
+**STOP-THE-LINE:**
+- Se questo blocco richiede vendor non consentito → STOP.
+- Se bypassa auth/role-gate o scoping tenant → STOP.
+
+
+
+---
+
+## B.4 SCHEMA DATABASE COMPLETO
+
+### B.4.1 Enumerazioni
+
+```sql
+-- =============================================================
+-- ENUMERAZIONI - CREARE PRIMA DELLE TABELLE
+-- =============================================================
+
+-- Tipo utente nel sistema
+CREATE TYPE user_role AS ENUM (
+  'superadmin',      -- Accesso totale (Paolo)
+  'tenant_admin',    -- Admin del tenant
+  'restaurant_admin', -- Admin singolo ristorante
+  'restaurant_staff', -- Staff ristorante
+  'customer'         -- Cliente finale
+);
+
+-- Stato ordine (state machine)
+CREATE TYPE order_status AS ENUM (
+  'created',         -- Appena creato
+  'confirmed',       -- Confermato dal ristorante
+  'preparing',       -- In preparazione
+  'ready',           -- Pronto
+  'completed',       -- Consegnato/ritirato
+  'cancelled',       -- Annullato
+  'disputed',        -- In contestazione
+  'refunded'         -- Rimborsato
+);
+
+-- Tipo transazione ledger
+CREATE TYPE transaction_type AS ENUM (
+  'credit_purchase',  -- Acquisto crediti
+  'credit_usage',     -- Uso credito per ordine
+  'credit_refund',    -- Rimborso credito
+  'credit_adjustment',-- Correzione manuale
+  'credit_expiry'     -- Scadenza crediti
+);
+
+-- Stato messaggio outbox
+CREATE TYPE outbox_status AS ENUM (
+  'pending',         -- Da processare
+  'processing',      -- In elaborazione
+  'sent',            -- Inviato con successo
+  'failed',          -- Fallito (retry possibile)
+  'dlq'              -- In dead letter queue
+);
+
+-- Canale messaggistica
+CREATE TYPE message_channel AS ENUM (
+  'whatsapp',
+  'telegram',
+  'sms',
+  'email'
+);
+
+-- Tipo piano tariffario
+CREATE TYPE pricing_plan AS ENUM (
+  'freedom',         -- Pay as you go EUR 1.20
+  'lampo_500',       -- Prepagato EUR 0.98
+  'lampo_max',       -- Abbonamento EUR 0.78 + EUR 99/mese
+  'enterprise'       -- Custom
+);
+
+-- Stato subscription
+CREATE TYPE subscription_status AS ENUM (
+  'trial',
+  'active',
+  'past_due',
+  'cancelled',
+  'expired'
+);
+```
+
+### B.4.2 Tabelle Core
+
+```sql
+-- =============================================================
+-- TABELLE CORE - TENANT E RESTAURANT
+-- =============================================================
+
+-- Tenant (gruppo di ristoranti, es. franchising)
+CREATE TABLE tenants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Identificazione
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  
+  -- Contatti
+  email VARCHAR(255) NOT NULL,
+  phone VARCHAR(50),
+  
+  -- Billing
+  stripe_customer_id VARCHAR(255),
+  pricing_plan pricing_plan NOT NULL DEFAULT 'freedom',
+  
+  -- Configurazione
+  settings JSONB NOT NULL DEFAULT '{}',
+  features JSONB NOT NULL DEFAULT '{"telegram": true, "whatsapp": true}',
+  
+  -- Audit
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+  
+  -- Constraints
+  CONSTRAINT tenants_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+  CONSTRAINT tenants_slug_format CHECK (slug ~* '^[a-z0-9-]+$')
+);
+
+CREATE INDEX idx_tenants_slug ON tenants(slug) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tenants_stripe ON tenants(stripe_customer_id) WHERE stripe_customer_id IS NOT NULL;
+
+-- Ristorante singolo
+CREATE TABLE restaurants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  
+  -- Identificazione
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  
+  -- Tipo ristorante (per skin UI)
+  restaurant_type VARCHAR(50) NOT NULL DEFAULT 'poke',
+  
+  -- Contatti
+  phone VARCHAR(50) NOT NULL,
+  email VARCHAR(255),
+  
+  -- Indirizzo
+  address_street VARCHAR(255),
+  address_city VARCHAR(100),
+  address_province VARCHAR(10),
+  address_cap VARCHAR(10),
+  address_country VARCHAR(2) DEFAULT 'IT',
+  
+  -- Coordinate (per future funzioni)
+  latitude DECIMAL(10, 8),
+  longitude DECIMAL(11, 8),
+  
+  -- Messaggistica
+  whatsapp_number VARCHAR(50),
+  telegram_chat_id VARCHAR(100),
+  preferred_channel message_channel NOT NULL DEFAULT 'whatsapp',
+  
+  -- Orari apertura (JSON)
+  opening_hours JSONB NOT NULL DEFAULT '{
+    "monday": {"open": "11:00", "close": "22:00"},
+    "tuesday": {"open": "11:00", "close": "22:00"},
+    "wednesday": {"open": "11:00", "close": "22:00"},
+    "thursday": {"open": "11:00", "close": "22:00"},
+    "friday": {"open": "11:00", "close": "23:00"},
+    "saturday": {"open": "11:00", "close": "23:00"},
+    "sunday": {"open": "12:00", "close": "22:00"}
+  }',
+  
+  -- Configurazione
+  settings JSONB NOT NULL DEFAULT '{}',
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  accepts_orders BOOLEAN NOT NULL DEFAULT true,
+  
+  -- Limiti
+  max_orders_per_hour INTEGER DEFAULT 50,
+  min_order_amount DECIMAL(10,2) DEFAULT 0,
+  estimated_prep_time INTEGER DEFAULT 20,
+  
+  -- Audit
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+  
+  -- Constraints
+  CONSTRAINT restaurants_unique_slug UNIQUE(tenant_id, slug),
+  CONSTRAINT restaurants_phone_format CHECK (phone ~* '^\+?[0-9]{8,15}$'),
+  CONSTRAINT restaurants_type_valid CHECK (restaurant_type IN ('poke', 'sushi', 'pizza', 'other'))
+);
+
+CREATE INDEX idx_restaurants_tenant ON restaurants(tenant_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_restaurants_slug ON restaurants(slug) WHERE deleted_at IS NULL;
+CREATE INDEX idx_restaurants_active ON restaurants(is_active, accepts_orders) WHERE deleted_at IS NULL;
+
+-- Utenti (auth interna: session-cookie)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- auth_subject rimosso: auth è gestita internamente (session-cookie)
+  tenant_id UUID REFERENCES tenants(id) ON DELETE SET NULL,
+  
+  -- Profilo
+  email VARCHAR(255) NOT NULL,
+  first_name VARCHAR(100),
+  last_name VARCHAR(100),
+  phone VARCHAR(50),
+  avatar_url TEXT,
+  
+  -- Ruolo e permessi
+  role user_role NOT NULL DEFAULT 'customer',
+  permissions JSONB NOT NULL DEFAULT '[]',
+  
+  -- Ristoranti accessibili (per staff)
+  restaurant_ids UUID[] DEFAULT '{}',
+  
+  -- Preferenze
+  preferences JSONB NOT NULL DEFAULT '{}',
+  locale VARCHAR(10) DEFAULT 'it-IT',
+  timezone VARCHAR(50) DEFAULT 'Europe/Rome',
+  
+  -- Audit
+  last_login_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ,
+  
+  -- Constraints
+  CONSTRAINT users_email_format CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+);
+
+CREATE INDEX idx_users_tenant ON users(tenant_id) WHERE tenant_id IS NOT NULL;
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_email ON users(email);
+```
+
+
+### B.4.3 Tabelle Menu
+
+```sql
+-- =============================================================
+-- TABELLE MENU - CATALOGO PRODOTTI
+-- =============================================================
+
+-- Categorie menu
+CREATE TABLE menu_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  description TEXT,
+  
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  image_url TEXT,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT menu_categories_unique_slug UNIQUE(restaurant_id, slug)
+);
+
+CREATE INDEX idx_menu_categories_restaurant ON menu_categories(restaurant_id);
+CREATE INDEX idx_menu_categories_active ON menu_categories(restaurant_id, is_active, sort_order);
+
+-- Prodotti menu
+CREATE TABLE menu_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  category_id UUID NOT NULL REFERENCES menu_categories(id) ON DELETE CASCADE,
+  
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(100) NOT NULL,
+  description TEXT,
+  
+  price DECIMAL(10,2) NOT NULL,
+  compare_price DECIMAL(10,2),
+  
+  is_available BOOLEAN NOT NULL DEFAULT true,
+  available_from TIME,
+  available_until TIME,
+  image_url TEXT,
+  
+  is_vegetarian BOOLEAN DEFAULT false,
+  is_vegan BOOLEAN DEFAULT false,
+  is_gluten_free BOOLEAN DEFAULT false,
+  is_spicy BOOLEAN DEFAULT false,
+  spicy_level INTEGER DEFAULT 0 CHECK (spicy_level BETWEEN 0 AND 3),
+  
+  allergens TEXT[] DEFAULT '{}',
+  calories INTEGER,
+  nutrition_info JSONB,
+  ingredients TEXT[] DEFAULT '{}',
+  
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  order_count INTEGER NOT NULL DEFAULT 0,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT menu_items_unique_slug UNIQUE(restaurant_id, slug),
+  CONSTRAINT menu_items_price_positive CHECK (price >= 0),
+  CONSTRAINT menu_items_compare_price CHECK (compare_price IS NULL OR compare_price > price)
+);
+
+CREATE INDEX idx_menu_items_restaurant ON menu_items(restaurant_id);
+CREATE INDEX idx_menu_items_category ON menu_items(category_id);
+CREATE INDEX idx_menu_items_available ON menu_items(restaurant_id, is_available) WHERE is_available = true;
+CREATE INDEX idx_menu_items_popular ON menu_items(restaurant_id, order_count DESC);
+CREATE INDEX idx_menu_items_allergens ON menu_items USING GIN(allergens);
+
+-- Varianti prodotto (es. taglia, base)
+CREATE TABLE menu_item_variants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  item_id UUID NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
+  
+  name VARCHAR(100) NOT NULL,
+  price_delta DECIMAL(10,2) NOT NULL DEFAULT 0,
+  is_available BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_menu_item_variants_item ON menu_item_variants(item_id);
+
+-- Extra/Aggiunte
+CREATE TABLE menu_extras (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  
+  name VARCHAR(100) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  applicable_categories UUID[] DEFAULT '{}',
+  is_available BOOLEAN NOT NULL DEFAULT true,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_menu_extras_restaurant ON menu_extras(restaurant_id);
+```
+
+### B.4.4 Tabelle Ordini
+
+```sql
+-- =============================================================
+-- TABELLE ORDINI - CORE BUSINESS
+-- =============================================================
+
+-- Ordini
+CREATE TABLE orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id),
+  
+  order_number INTEGER NOT NULL,
+  
+  customer_name VARCHAR(255) NOT NULL,
+  customer_phone VARCHAR(50) NOT NULL,
+  customer_email VARCHAR(255),
+  customer_channel message_channel NOT NULL DEFAULT 'whatsapp',
+  customer_channel_id VARCHAR(255),
+  
+  status order_status NOT NULL DEFAULT 'created',
+  status_history JSONB NOT NULL DEFAULT '[]',
+  
+  order_type VARCHAR(20) NOT NULL DEFAULT 'takeaway',
+  
+  requested_time TIMESTAMPTZ,
+  estimated_ready_at TIMESTAMPTZ,
+  actual_ready_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  
+  subtotal DECIMAL(10,2) NOT NULL,
+  discount_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total DECIMAL(10,2) NOT NULL,
+  
+  platform_fee DECIMAL(10,2) NOT NULL,
+  fee_plan pricing_plan NOT NULL DEFAULT 'freedom',
+  
+  customer_notes TEXT,
+  internal_notes TEXT,
+  
+  ip_address INET,
+  user_agent TEXT,
+  idempotency_key VARCHAR(100),
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT orders_unique_number UNIQUE(restaurant_id, order_number),
+  CONSTRAINT orders_unique_idempotency UNIQUE(idempotency_key),
+  CONSTRAINT orders_total_valid CHECK (total >= 0),
+  CONSTRAINT orders_type_valid CHECK (order_type IN ('takeaway', 'delivery', 'dine_in'))
+);
+
+CREATE INDEX idx_orders_restaurant ON orders(restaurant_id);
+CREATE INDEX idx_orders_restaurant_date ON orders(restaurant_id, created_at DESC);
+CREATE INDEX idx_orders_status ON orders(restaurant_id, status);
+CREATE INDEX idx_orders_customer_phone ON orders(customer_phone);
+CREATE INDEX idx_orders_idempotency ON orders(idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE INDEX idx_orders_created ON orders(created_at DESC);
+
+-- Items ordine
+CREATE TABLE order_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  
+  item_id UUID REFERENCES menu_items(id) ON DELETE SET NULL,
+  item_name VARCHAR(255) NOT NULL,
+  item_price DECIMAL(10,2) NOT NULL,
+  
+  variant_id UUID REFERENCES menu_item_variants(id) ON DELETE SET NULL,
+  variant_name VARCHAR(100),
+  variant_price_delta DECIMAL(10,2) DEFAULT 0,
+  
+  quantity INTEGER NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10,2) NOT NULL,
+  total_price DECIMAL(10,2) NOT NULL,
+  
+  extras JSONB NOT NULL DEFAULT '[]',
+  extras_total DECIMAL(10,2) NOT NULL DEFAULT 0,
+  
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT order_items_quantity_positive CHECK (quantity > 0),
+  CONSTRAINT order_items_price_positive CHECK (unit_price >= 0)
+);
+
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_item ON order_items(item_id) WHERE item_id IS NOT NULL;
+
+-- Transizioni stato ordine (audit trail completo)
+CREATE TABLE order_transitions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  
+  from_status order_status,
+  to_status order_status NOT NULL,
+  
+  triggered_by UUID REFERENCES users(id),
+  triggered_by_system BOOLEAN DEFAULT false,
+  
+  reason TEXT,
+  metadata JSONB DEFAULT '{}',
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_order_transitions_order ON order_transitions(order_id);
+CREATE INDEX idx_order_transitions_created ON order_transitions(created_at DESC);
+```
+
+### B.4.5 Tabelle Billing e Credits
+
+```sql
+-- =============================================================
+-- TABELLE BILLING - CREDITI E LEDGER
+-- =============================================================
+
+-- Crediti ristorante
+CREATE TABLE restaurant_credits (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  
+  balance DECIMAL(10,2) NOT NULL DEFAULT 0,
+  reserved DECIMAL(10,2) NOT NULL DEFAULT 0,
+  
+  credit_limit DECIMAL(10,2) DEFAULT 0,
+  low_balance_threshold DECIMAL(10,2) DEFAULT 50,
+  low_balance_notified_at TIMESTAMPTZ,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT restaurant_credits_unique UNIQUE(restaurant_id),
+  CONSTRAINT restaurant_credits_balance_valid CHECK (balance >= 0),
+  CONSTRAINT restaurant_credits_reserved_valid CHECK (reserved >= 0)
+);
+
+CREATE INDEX idx_restaurant_credits_low ON restaurant_credits(balance) 
+  WHERE balance < low_balance_threshold;
+
+-- Ledger transazioni (immutabile, hash-chain)
+CREATE TABLE credit_ledger (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id),
+  
+  transaction_type transaction_type NOT NULL,
+  
+  amount DECIMAL(10,2) NOT NULL,
+  balance_before DECIMAL(10,2) NOT NULL,
+  balance_after DECIMAL(10,2) NOT NULL,
+  
+  order_id UUID REFERENCES orders(id),
+  stripe_payment_intent_id VARCHAR(255),
+  stripe_invoice_id VARCHAR(255),
+  
+  description TEXT NOT NULL,
+  
+  prev_hash VARCHAR(64),
+  entry_hash VARCHAR(64) NOT NULL,
+  
+  metadata JSONB DEFAULT '{}',
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by UUID REFERENCES users(id)
+);
+
+CREATE INDEX idx_credit_ledger_restaurant ON credit_ledger(restaurant_id);
+CREATE INDEX idx_credit_ledger_order ON credit_ledger(order_id) WHERE order_id IS NOT NULL;
+CREATE INDEX idx_credit_ledger_created ON credit_ledger(created_at DESC);
+CREATE INDEX idx_credit_ledger_type ON credit_ledger(restaurant_id, transaction_type);
+
+-- Subscriptions (per LAMPO MAX)
+CREATE TABLE subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  
+  stripe_subscription_id VARCHAR(255) NOT NULL UNIQUE,
+  stripe_price_id VARCHAR(255) NOT NULL,
+  
+  plan pricing_plan NOT NULL,
+  status subscription_status NOT NULL DEFAULT 'active',
+  
+  current_period_start TIMESTAMPTZ NOT NULL,
+  current_period_end TIMESTAMPTZ NOT NULL,
+  cancel_at TIMESTAMPTZ,
+  cancelled_at TIMESTAMPTZ,
+  
+  trial_start TIMESTAMPTZ,
+  trial_end TIMESTAMPTZ,
+  
+  metadata JSONB DEFAULT '{}',
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_subscriptions_restaurant ON subscriptions(restaurant_id);
+CREATE INDEX idx_subscriptions_stripe ON subscriptions(stripe_subscription_id);
+CREATE INDEX idx_subscriptions_status ON subscriptions(status);
+
+-- Pacchetti crediti prepagati
+CREATE TABLE credit_packages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  name VARCHAR(100) NOT NULL,
+  slug VARCHAR(50) NOT NULL UNIQUE,
+  
+  credits INTEGER NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  price_per_order DECIMAL(10,2) NOT NULL,
+  
+  stripe_price_id VARCHAR(255),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  validity_days INTEGER DEFAULT 365,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Acquisti pacchetti
+CREATE TABLE credit_purchases (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  restaurant_id UUID NOT NULL REFERENCES restaurants(id),
+  package_id UUID NOT NULL REFERENCES credit_packages(id),
+  
+  stripe_payment_intent_id VARCHAR(255) NOT NULL,
+  stripe_invoice_id VARCHAR(255),
+  
+  credits_purchased INTEGER NOT NULL,
+  amount_paid DECIMAL(10,2) NOT NULL,
+  
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  expires_at TIMESTAMPTZ NOT NULL,
+  
+  credits_used INTEGER NOT NULL DEFAULT 0,
+  credits_remaining INTEGER NOT NULL,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_credit_purchases_restaurant ON credit_purchases(restaurant_id);
+CREATE INDEX idx_credit_purchases_status ON credit_purchases(status);
+CREATE INDEX idx_credit_purchases_expires ON credit_purchases(expires_at) WHERE status = 'completed';
+```
+
+### B.4.6 Tabelle Messaging e Outbox Pattern
+
+```sql
+-- =====================================================
+-- OUTBOX PATTERN: GARANZIA CONSEGNA MESSAGGI
+-- =====================================================
+
+-- Outbox principale per tutti i messaggi in uscita
+CREATE TABLE outbox (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  restaurant_id UUID REFERENCES restaurants(id),
+  
+  -- Aggregato e evento
+  aggregate_type VARCHAR(50) NOT NULL,  -- 'order', 'billing', 'system'
+  aggregate_id UUID NOT NULL,
+  event_type VARCHAR(100) NOT NULL,     -- 'order_created', 'payment_received', etc.
+  
+  -- Destinazione
+  channel message_channel NOT NULL,      -- 'whatsapp', 'telegram', 'email'
+  destination VARCHAR(255) NOT NULL,     -- phone number, chat_id, email
+  
+  -- Payload
+  payload JSONB NOT NULL,
+  template_id VARCHAR(100),              -- Template WATI se applicabile
+  
+  -- Stato processing
+  status outbox_status NOT NULL DEFAULT 'pending',
+  
+  -- Retry management
+  attempts INTEGER NOT NULL DEFAULT 0,
+  max_attempts INTEGER NOT NULL DEFAULT 5,
+  next_retry_at TIMESTAMPTZ,
+  last_error TEXT,
+  last_error_at TIMESTAMPTZ,
+  
+  -- Timing
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMPTZ,
+  delivered_at TIMESTAMPTZ,
+  
+  -- Idempotency
+  idempotency_key VARCHAR(255) NOT NULL,
+  
+  CONSTRAINT unique_outbox_idempotency UNIQUE (tenant_id, idempotency_key)
+);
+
+CREATE INDEX idx_outbox_pending ON outbox(status, next_retry_at) 
+  WHERE status IN ('pending', 'processing', 'retry');
+CREATE INDEX idx_outbox_tenant ON outbox(tenant_id, created_at DESC);
+CREATE INDEX idx_outbox_aggregate ON outbox(aggregate_type, aggregate_id);
+CREATE INDEX idx_outbox_channel ON outbox(channel, status);
+
+-- Log completo di tutti i messaggi inviati (storico)
+CREATE TABLE message_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  restaurant_id UUID REFERENCES restaurants(id),
+  
+  outbox_id UUID REFERENCES outbox(id),
+  
+  -- Dettagli messaggio
+  channel message_channel NOT NULL,
+  destination VARCHAR(255) NOT NULL,
+  template_id VARCHAR(100),
+  payload JSONB NOT NULL,
+  
+  -- Risposta provider
+  provider_message_id VARCHAR(255),
+  provider_response JSONB,
+  
+  -- Stato finale
+  status VARCHAR(50) NOT NULL,  -- 'sent', 'delivered', 'read', 'failed'
+  error_code VARCHAR(50),
+  error_message TEXT,
+  
+  -- Timing
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  delivered_at TIMESTAMPTZ,
+  read_at TIMESTAMPTZ,
+  
+  -- Costi (se applicabile)
+  cost_credits DECIMAL(10,4),
+  cost_currency VARCHAR(3),
+  cost_amount DECIMAL(10,4)
+);
+
+CREATE INDEX idx_message_log_tenant ON message_log(tenant_id, sent_at DESC);
+CREATE INDEX idx_message_log_restaurant ON message_log(restaurant_id, sent_at DESC);
+CREATE INDEX idx_message_log_outbox ON message_log(outbox_id);
+CREATE INDEX idx_message_log_status ON message_log(status, sent_at DESC);
+
+-- Dead Letter Queue per messaggi falliti definitivamente
+CREATE TABLE dlq_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  
+  -- Riferimento originale
+  outbox_id UUID NOT NULL REFERENCES outbox(id),
+  original_payload JSONB NOT NULL,
+  
+  -- Motivo fallimento
+  failure_reason TEXT NOT NULL,
+  failure_category VARCHAR(50) NOT NULL,  -- 'invalid_destination', 'rate_limit', 'provider_error', 'timeout'
+  all_attempts JSONB NOT NULL,            -- Array di tutti i tentativi con errori
+  
+  -- Stato DLQ
+  dlq_status VARCHAR(50) NOT NULL DEFAULT 'unprocessed',  -- 'unprocessed', 'reviewed', 'retried', 'discarded'
+  reviewed_by UUID REFERENCES users(id),
+  reviewed_at TIMESTAMPTZ,
+  review_notes TEXT,
+  
+  -- Timing
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_dlq_tenant ON dlq_entries(tenant_id, created_at DESC);
+CREATE INDEX idx_dlq_status ON dlq_entries(dlq_status) WHERE dlq_status = 'unprocessed';
+CREATE INDEX idx_dlq_category ON dlq_entries(failure_category);
+
+-- Webhook events ricevuti (WATI callbacks, Stripe events)
+CREATE TABLE webhook_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Sorgente
+  source VARCHAR(50) NOT NULL,           -- 'wati', 'stripe', 'telegram', 'Auth provider esterno vietato'
+  event_type VARCHAR(100) NOT NULL,
+  
+  -- Payload completo
+  raw_payload JSONB NOT NULL,
+  headers JSONB,
+  
+  -- Verifica
+  signature VARCHAR(500),
+  signature_valid BOOLEAN,
+  
+  -- Processing
+  processed BOOLEAN NOT NULL DEFAULT false,
+  processed_at TIMESTAMPTZ,
+  processing_result JSONB,
+  processing_error TEXT,
+  
+  -- Idempotency
+  external_id VARCHAR(255),              -- ID dal provider esterno
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT unique_webhook_event UNIQUE (source, external_id)
+);
+
+CREATE INDEX idx_webhook_source ON webhook_events(source, created_at DESC);
+CREATE INDEX idx_webhook_unprocessed ON webhook_events(source, processed) WHERE processed = false;
+CREATE INDEX idx_webhook_type ON webhook_events(source, event_type);
+```
+
+### B.4.7 Tabelle Audit, Supporto e Sistema
+
+```sql
+-- =====================================================
+-- AUDIT TRAIL: GDPR COMPLIANT
+-- =====================================================
+
+-- Audit log completo per tutte le operazioni sensibili
+CREATE TABLE audit_log (
+  id BIGSERIAL PRIMARY KEY,
+  tenant_id UUID REFERENCES tenants(id),
+  
+  -- Chi ha fatto l'azione
+  user_id UUID REFERENCES users(id),
+  user_email VARCHAR(255),
+  user_role user_role,
+  ip_address INET,
+  user_agent TEXT,
+  
+  -- Cosa è stato fatto
+  action VARCHAR(100) NOT NULL,           -- 'create', 'update', 'delete', 'view', 'export', 'login'
+  resource_type VARCHAR(100) NOT NULL,    -- 'order', 'restaurant', 'user', 'menu_item'
+  resource_id UUID,
+  
+  -- Dettagli cambiamento
+  old_values JSONB,
+  new_values JSONB,
+  changed_fields TEXT[],
+  
+  -- Contesto
+  request_id UUID,
+  session_id VARCHAR(255),
+  endpoint VARCHAR(255),
+  
+  -- GDPR: dati sensibili oscurati ma tracciabili
+  contains_pii BOOLEAN NOT NULL DEFAULT false,
+  pii_fields TEXT[],
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Partizionamento per data (performance su tabella grande)
+CREATE INDEX idx_audit_log_tenant_date ON audit_log(tenant_id, created_at DESC);
+CREATE INDEX idx_audit_log_user ON audit_log(user_id, created_at DESC);
+CREATE INDEX idx_audit_log_resource ON audit_log(resource_type, resource_id);
+CREATE INDEX idx_audit_log_action ON audit_log(action, created_at DESC);
+CREATE INDEX idx_audit_log_pii ON audit_log(contains_pii) WHERE contains_pii = true;
+
+-- Chiavi idempotenza per deduplica richieste
+CREATE TABLE idempotency_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  
+  key VARCHAR(255) NOT NULL,
+  
+  -- Richiesta originale
+  request_method VARCHAR(10) NOT NULL,
+  request_path VARCHAR(500) NOT NULL,
+  request_hash VARCHAR(64) NOT NULL,      -- SHA256 del body
+  
+  -- Risposta cached
+  response_status INTEGER NOT NULL,
+  response_body JSONB NOT NULL,
+  response_headers JSONB,
+  
+  -- Timing
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  
+  CONSTRAINT unique_idempotency_key UNIQUE (tenant_id, key)
+);
+
+CREATE INDEX idx_idempotency_expires ON idempotency_keys(expires_at);
+CREATE INDEX idx_idempotency_key ON idempotency_keys(tenant_id, key);
+
+-- Feature flags per rollout progressivo
+CREATE TABLE feature_flags (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  flag_key VARCHAR(100) NOT NULL UNIQUE,
+  description TEXT,
+  
+  -- Stato globale
+  enabled BOOLEAN NOT NULL DEFAULT false,
+  
+  -- Targeting
+  tenant_ids UUID[],                      -- Tenant specifici abilitati
+  restaurant_ids UUID[],                  -- Restaurant specifici abilitati
+  user_ids UUID[],                        -- User specifici abilitati
+  percentage INTEGER CHECK (percentage >= 0 AND percentage <= 100),  -- Rollout percentuale
+  
+  -- Configurazione
+  config JSONB DEFAULT '{}',
+  
+  -- Audit
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_by UUID REFERENCES users(id),
+  updated_by UUID REFERENCES users(id)
+);
+
+CREATE INDEX idx_feature_flags_key ON feature_flags(flag_key);
+CREATE INDEX idx_feature_flags_enabled ON feature_flags(enabled);
+
+-- System settings (Control Tower)
+CREATE TABLE system_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID REFERENCES tenants(id),  -- NULL = global setting
+  
+  setting_key VARCHAR(100) NOT NULL,
+  setting_value JSONB NOT NULL,
+  
+  description TEXT,
+  
+  -- Validazione
+  value_schema JSONB,                     -- JSON Schema per validare il valore
+  
+  -- Audit
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by UUID REFERENCES users(id),
+  
+  CONSTRAINT unique_system_setting UNIQUE (tenant_id, setting_key)
+);
+
+CREATE INDEX idx_system_settings_tenant ON system_settings(tenant_id);
+CREATE INDEX idx_system_settings_key ON system_settings(setting_key);
+
+-- Default system settings
+INSERT INTO system_settings (tenant_id, setting_key, setting_value, description) VALUES
+  (NULL, 'platform_fee_freedom', '{"rate": 1.20, "currency": "EUR"}', 'Fee per ordine piano FREEDOM'),
+  (NULL, 'platform_fee_lampo500', '{"rate": 0.98, "currency": "EUR"}', 'Fee per ordine piano LAMPO 500'),
+  (NULL, 'platform_fee_lampomax', '{"rate": 0.78, "currency": "EUR", "monthly": 99}', 'Fee per ordine piano LAMPO MAX'),
+  (NULL, 'credit_low_threshold', '{"orders": 10}', 'Soglia crediti bassi per alert'),
+  (NULL, 'order_rate_limit', '{"per_minute": 60, "per_hour": 500}', 'Rate limit ordini per restaurant'),
+  (NULL, 'outbox_max_retries', '{"value": 5}', 'Tentativi massimi outbox'),
+  (NULL, 'outbox_retry_delays', '{"delays": [60, 300, 900, 3600, 14400]}', 'Delay retry in secondi'),
+  (NULL, 'session_timeout', '{"minutes": 60}', 'Timeout sessione admin'),
+  (NULL, 'min_order_amount', '{"value": 5.00, "currency": "EUR"}', 'Ordine minimo'),
+  (NULL, 'max_order_items', '{"value": 50}', 'Massimo items per ordine');
+
+-- Log job schedulati (CRON)
+CREATE TABLE scheduled_jobs_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  job_name VARCHAR(100) NOT NULL,
+  job_type VARCHAR(50) NOT NULL,          -- 'cron', 'queue', 'manual'
+  
+  -- Esecuzione
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
+  duration_ms INTEGER,
+  
+  -- Risultato
+  status VARCHAR(50) NOT NULL DEFAULT 'running',  -- 'running', 'completed', 'failed', 'timeout'
+  result JSONB,
+  error TEXT,
+  stack_trace TEXT,
+  
+  -- Metriche
+  items_processed INTEGER,
+  items_failed INTEGER,
+  
+  -- Trigger info
+  triggered_by VARCHAR(100),              -- 'cron', 'webhook', 'manual', 'queue'
+  trigger_data JSONB
+);
+
+CREATE INDEX idx_scheduled_jobs_name ON scheduled_jobs_log(job_name, started_at DESC);
+CREATE INDEX idx_scheduled_jobs_status ON scheduled_jobs_log(status, started_at DESC);
+
+-- API Rate Limiting tracking
+CREATE TABLE rate_limit_entries (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Identificatore
+  key VARCHAR(255) NOT NULL,              -- 'ip:1.2.3.4', 'user:uuid', 'restaurant:uuid'
+  window_start TIMESTAMPTZ NOT NULL,
+  window_size_seconds INTEGER NOT NULL,
+  
+  -- Contatori
+  request_count INTEGER NOT NULL DEFAULT 1,
+  
+  -- Configurazione
+  max_requests INTEGER NOT NULL,
+  
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  
+  CONSTRAINT unique_rate_limit_window UNIQUE (key, window_start)
+);
+
+CREATE INDEX idx_rate_limit_key ON rate_limit_entries(key, window_start DESC);
+CREATE INDEX idx_rate_limit_cleanup ON rate_limit_entries(window_start);
+
+-- Sessioni utente (session-cookie nativo)
+CREATE TABLE user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+
+  -- Token sessione (generato internamente, no provider esterno)
+  session_token VARCHAR(128) NOT NULL UNIQUE,
+
+  -- Device info
+  ip_address INET,
+  user_agent TEXT,
+  device_type VARCHAR(50),
+
+  -- Stato
+  is_active BOOLEAN NOT NULL DEFAULT true,
+
+  -- Timing
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_active_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ,
+  revoked_reason VARCHAR(255),
+
+  -- Constraint
+  CONSTRAINT session_token_length CHECK (LENGTH(session_token) >= 64)
+);
+
+CREATE INDEX idx_user_sessions_user ON user_sessions(user_id, is_active);
+CREATE INDEX idx_user_sessions_token ON user_sessions(session_token) WHERE is_active = true;
+CREATE INDEX idx_user_sessions_active ON user_sessions(is_active, expires_at) WHERE is_active = true;
+
+
+-- Notifiche in-app (per dashboard admin)
+CREATE TABLE notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id),
+  user_id UUID REFERENCES users(id),      -- NULL = broadcast a tutti
+  restaurant_id UUID REFERENCES restaurants(id),
+  
+  -- Contenuto
+  type VARCHAR(50) NOT NULL,              -- 'info', 'warning', 'error', 'success'
+  category VARCHAR(50) NOT NULL,          -- 'order', 'billing', 'system', 'promotion'
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  
+  -- Azione
+  action_url VARCHAR(500),
+  action_label VARCHAR(100),
+  
+  -- Stato
+  read_at TIMESTAMPTZ,
+  dismissed_at TIMESTAMPTZ,
+  
+  -- Timing
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_notifications_user ON notifications(user_id, read_at) WHERE read_at IS NULL;
+CREATE INDEX idx_notifications_tenant ON notifications(tenant_id, created_at DESC);
+CREATE INDEX idx_notifications_unread ON notifications(user_id, created_at DESC) WHERE read_at IS NULL;
+```
+
+---
+
+## B.5 Functions e Triggers SQL
+
+### B.5.1 Trigger Utilities
+
+```sql
+-- =====================================================
+-- TRIGGER: AUTO-UPDATE TIMESTAMPS
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Applica a tutte le tabelle con updated_at
+DO $$
+DECLARE
+  t TEXT;
+BEGIN
+  FOR t IN 
+    SELECT table_name 
+    FROM information_schema.columns 
+    WHERE column_name = 'updated_at' 
+      AND table_schema = 'public'
+  LOOP
+    EXECUTE format('
+      DROP TRIGGER IF EXISTS trigger_update_updated_at ON %I;
+      CREATE TRIGGER trigger_update_updated_at
+      BEFORE UPDATE ON %I
+      FOR EACH ROW
+      EXECUTE FUNCTION update_updated_at();
+    ', t, t);
+  END LOOP;
+END;
+$$;
+```
+
+### B.5.2 Order Number Generation (Race-Condition Safe)
+
+```sql
+-- =====================================================
+-- FUNZIONE: GENERAZIONE NUMERO ORDINE
+-- Pattern: [RESTAURANT_CODE]-[YYYYMMDD]-[SEQUENTIAL]
+-- Thread-safe con ADVISORY LOCK
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION generate_order_number(p_restaurant_id UUID)
+RETURNS VARCHAR(50) AS $$
+DECLARE
+  v_restaurant_code VARCHAR(10);
+  v_date_part VARCHAR(8);
+  v_sequence INTEGER;
+  v_lock_key BIGINT;
+  v_order_number VARCHAR(50);
+BEGIN
+  -- Genera lock key unico per restaurant+data
+  v_date_part := TO_CHAR(CURRENT_DATE, 'YYYYMMDD');
+  v_lock_key := hashtext(p_restaurant_id::TEXT || v_date_part);
+  
+  -- Acquisisce advisory lock (blocking)
+  PERFORM pg_advisory_xact_lock(v_lock_key);
+  
+  -- Ottiene codice restaurant
+  SELECT COALESCE(code, UPPER(LEFT(name, 3)))
+  INTO v_restaurant_code
+  FROM restaurants
+  WHERE id = p_restaurant_id;
+  
+  IF v_restaurant_code IS NULL THEN
+    RAISE EXCEPTION 'Restaurant % not found', p_restaurant_id;
+  END IF;
+  
+  -- Conta ordini di oggi per questo restaurant
+  SELECT COUNT(*) + 1
+  INTO v_sequence
+  FROM orders
+  WHERE restaurant_id = p_restaurant_id
+    AND DATE(created_at) = CURRENT_DATE;
+  
+  -- Compone numero ordine
+  v_order_number := v_restaurant_code || '-' || v_date_part || '-' || LPAD(v_sequence::TEXT, 4, '0');
+  
+  RETURN v_order_number;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger per assegnazione automatica
+CREATE OR REPLACE FUNCTION assign_order_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.order_number IS NULL THEN
+    NEW.order_number := generate_order_number(NEW.restaurant_id);
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_assign_order_number
+BEFORE INSERT ON orders
+FOR EACH ROW
+EXECUTE FUNCTION assign_order_number();
+```
+
+### B.5.3 Order State Machine Enforcement
+
+```sql
+-- =====================================================
+-- STATE MACHINE: TRANSIZIONI ORDINE VALIDE
+-- =====================================================
+
+-- Tabella transizioni valide (configurabile)
+CREATE TABLE order_status_transitions (
+  id SERIAL PRIMARY KEY,
+  from_status order_status NOT NULL,
+  to_status order_status NOT NULL,
+  requires_payment BOOLEAN NOT NULL DEFAULT false,
+  requires_restaurant_action BOOLEAN NOT NULL DEFAULT false,
+  notify_customer BOOLEAN NOT NULL DEFAULT true,
+  notify_restaurant BOOLEAN NOT NULL DEFAULT true,
+  CONSTRAINT unique_transition UNIQUE (from_status, to_status)
+);
+
+-- Popola transizioni valide
+INSERT INTO order_status_transitions (from_status, to_status, requires_payment, requires_restaurant_action, notify_customer, notify_restaurant) VALUES
+  -- Da pending
+  ('pending', 'confirmed', true, false, true, true),
+  ('pending', 'cancelled', false, false, true, true),
+  
+  -- Da confirmed
+  ('confirmed', 'preparing', false, true, true, false),
+  ('confirmed', 'cancelled', false, true, true, true),
+  
+  -- Da preparing
+  ('preparing', 'ready', false, true, true, false),
+  ('preparing', 'cancelled', false, true, true, true),
+  
+  -- Da ready
+  ('ready', 'picked_up', false, true, true, false),
+  ('ready', 'delivering', false, true, true, false),
+  
+  -- Da delivering
+  ('delivering', 'delivered', false, true, true, false),
+  
+  -- Da picked_up/delivered
+  ('picked_up', 'completed', false, false, false, false),
+  ('delivered', 'completed', false, false, false, false);
+
+-- Funzione validazione transizione
+CREATE OR REPLACE FUNCTION validate_order_status_transition()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_transition RECORD;
+BEGIN
+  -- Se status non cambia, ok
+  IF OLD.status = NEW.status THEN
+    RETURN NEW;
+  END IF;
+  
+  -- Cerca transizione valida
+  SELECT * INTO v_transition
+  FROM order_status_transitions
+  WHERE from_status = OLD.status
+    AND to_status = NEW.status;
+  
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invalid status transition from % to % for order %',
+      OLD.status, NEW.status, OLD.id
+      USING ERRCODE = 'check_violation';
+  END IF;
+  
+  -- Verifica pagamento se richiesto
+  IF v_transition.requires_payment AND NEW.payment_status != 'completed' THEN
+    RAISE EXCEPTION 'Payment required before transition to %', NEW.status
+      USING ERRCODE = 'check_violation';
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_validate_order_status
+BEFORE UPDATE OF status ON orders
+FOR EACH ROW
+EXECUTE FUNCTION validate_order_status_transition();
+
+-- Funzione logging transizione
+CREATE OR REPLACE FUNCTION log_order_transition()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO order_transitions (
+      order_id,
+      from_status,
+      to_status,
+      triggered_by,
+      metadata
+    ) VALUES (
+      NEW.id,
+      OLD.status,
+      NEW.status,
+      COALESCE(current_setting('app.current_user_id', true)::UUID, NULL),
+      jsonb_build_object(
+        'ip_address', current_setting('app.client_ip', true),
+        'user_agent', current_setting('app.user_agent', true)
+      )
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_log_order_transition
+AFTER UPDATE OF status ON orders
+FOR EACH ROW
+EXECUTE FUNCTION log_order_transition();
+```
+
+### B.5.4 Credit Ledger Hash-Chain
+
+```sql
+-- =====================================================
+-- HASH-CHAIN: INTEGRITÀ LEDGER CREDITI
+-- Pattern: entry_hash = SHA256(prev_hash + data)
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION calculate_ledger_hash(
+  p_prev_hash VARCHAR(64),
+  p_restaurant_id UUID,
+  p_transaction_type transaction_type,
+  p_amount DECIMAL(10,2),
+  p_balance_before DECIMAL(10,2),
+  p_balance_after DECIMAL(10,2),
+  p_created_at TIMESTAMPTZ
+)
+RETURNS VARCHAR(64) AS $$
+DECLARE
+  v_data TEXT;
+BEGIN
+  v_data := COALESCE(p_prev_hash, 'GENESIS') || '|' ||
+            p_restaurant_id::TEXT || '|' ||
+            p_transaction_type::TEXT || '|' ||
+            p_amount::TEXT || '|' ||
+            p_balance_before::TEXT || '|' ||
+            p_balance_after::TEXT || '|' ||
+            p_created_at::TEXT;
+  
+  RETURN encode(sha256(v_data::bytea), 'hex');
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Trigger per calcolo hash automatico
+CREATE OR REPLACE FUNCTION set_ledger_hash()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_prev_hash VARCHAR(64);
+BEGIN
+  -- Trova hash entry precedente per questo restaurant
+  SELECT entry_hash INTO v_prev_hash
+  FROM credit_ledger
+  WHERE restaurant_id = NEW.restaurant_id
+  ORDER BY created_at DESC
+  LIMIT 1;
+  
+  NEW.prev_hash := v_prev_hash;
+  NEW.entry_hash := calculate_ledger_hash(
+    v_prev_hash,
+    NEW.restaurant_id,
+    NEW.transaction_type,
+    NEW.amount,
+    NEW.balance_before,
+    NEW.balance_after,
+    NEW.created_at
+  );
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_set_ledger_hash
+BEFORE INSERT ON credit_ledger
+FOR EACH ROW
+EXECUTE FUNCTION set_ledger_hash();
+
+-- Funzione verifica integrità ledger
+CREATE OR REPLACE FUNCTION verify_ledger_integrity(p_restaurant_id UUID)
+RETURNS TABLE (
+  is_valid BOOLEAN,
+  invalid_entry_id UUID,
+  expected_hash VARCHAR(64),
+  actual_hash VARCHAR(64),
+  error_message TEXT
+) AS $$
+DECLARE
+  v_entry RECORD;
+  v_prev_hash VARCHAR(64) := NULL;
+  v_calculated_hash VARCHAR(64);
+BEGIN
+  FOR v_entry IN
+    SELECT *
+    FROM credit_ledger
+    WHERE restaurant_id = p_restaurant_id
+    ORDER BY created_at ASC
+  LOOP
+    -- Verifica prev_hash
+    IF v_prev_hash IS DISTINCT FROM v_entry.prev_hash THEN
+      RETURN QUERY SELECT 
+        false,
+        v_entry.id,
+        v_prev_hash,
+        v_entry.prev_hash,
+        'prev_hash mismatch'::TEXT;
+      RETURN;
+    END IF;
+    
+    -- Calcola e verifica entry_hash
+    v_calculated_hash := calculate_ledger_hash(
+      v_entry.prev_hash,
+      v_entry.restaurant_id,
+      v_entry.transaction_type,
+      v_entry.amount,
+      v_entry.balance_before,
+      v_entry.balance_after,
+      v_entry.created_at
+    );
+    
+    IF v_calculated_hash != v_entry.entry_hash THEN
+      RETURN QUERY SELECT
+        false,
+        v_entry.id,
+        v_calculated_hash,
+        v_entry.entry_hash,
+        'entry_hash mismatch - possible tampering'::TEXT;
+      RETURN;
+    END IF;
+    
+    v_prev_hash := v_entry.entry_hash;
+  END LOOP;
+  
+  -- Tutto ok
+  RETURN QUERY SELECT true, NULL::UUID, NULL::VARCHAR(64), NULL::VARCHAR(64), 'Ledger integrity verified'::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### B.5.5 Credit Debit for Orders (Atomic)
+
+```sql
+-- =====================================================
+-- ADDEBITO CREDITI ATOMICO CON VERIFICA
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION debit_credits_for_order(
+  p_order_id UUID,
+  p_restaurant_id UUID,
+  p_amount DECIMAL(10,2),
+  p_description TEXT DEFAULT NULL
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  ledger_entry_id UUID,
+  new_balance DECIMAL(10,2),
+  error_message TEXT
+) AS $$
+DECLARE
+  v_current_balance DECIMAL(10,2);
+  v_new_balance DECIMAL(10,2);
+  v_ledger_id UUID;
+BEGIN
+  -- Lock restaurant credits row
+  SELECT current_balance INTO v_current_balance
+  FROM restaurant_credits
+  WHERE restaurant_id = p_restaurant_id
+  FOR UPDATE;
+  
+  IF NOT FOUND THEN
+    RETURN QUERY SELECT false, NULL::UUID, NULL::DECIMAL(10,2), 
+      'Restaurant credits record not found'::TEXT;
+    RETURN;
+  END IF;
+  
+  -- Verifica saldo sufficiente
+  IF v_current_balance < p_amount THEN
+    RETURN QUERY SELECT false, NULL::UUID, v_current_balance,
+      format('Insufficient credits: available %.2f, required %.2f', 
+        v_current_balance, p_amount)::TEXT;
+    RETURN;
+  END IF;
+  
+  -- Calcola nuovo saldo
+  v_new_balance := v_current_balance - p_amount;
+  
+  -- Aggiorna saldo
+  UPDATE restaurant_credits
+  SET 
+    current_balance = v_new_balance,
+    total_debited = total_debited + p_amount,
+    last_debit_at = NOW()
+  WHERE restaurant_id = p_restaurant_id;
+  
+  -- Crea entry ledger
+  INSERT INTO credit_ledger (
+    restaurant_id,
+    transaction_type,
+    amount,
+    balance_before,
+    balance_after,
+    order_id,
+    description
+  ) VALUES (
+    p_restaurant_id,
+    'platform_fee',
+    -p_amount,
+    v_current_balance,
+    v_new_balance,
+    p_order_id,
+    COALESCE(p_description, 'Platform fee for order ' || p_order_id::TEXT)
+  )
+  RETURNING id INTO v_ledger_id;
+  
+  -- Controlla soglia bassa crediti
+  IF v_new_balance <= (
+    SELECT (setting_value->>'orders')::INTEGER * 1.20
+    FROM system_settings
+    WHERE setting_key = 'credit_low_threshold'
+  ) THEN
+    -- Inserisci notifica
+    INSERT INTO notifications (
+      tenant_id,
+      restaurant_id,
+      type,
+      category,
+      title,
+      message
+    )
+    SELECT
+      r.tenant_id,
+      r.id,
+      'warning',
+      'billing',
+      'Crediti in esaurimento',
+      format('Rimangono solo %.2f crediti (circa %s ordini)',
+        v_new_balance, FLOOR(v_new_balance / 1.20)::TEXT)
+    FROM restaurants r
+    WHERE r.id = p_restaurant_id;
+  END IF;
+  
+  RETURN QUERY SELECT true, v_ledger_id, v_new_balance, NULL::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+```
+
+### B.5.6 Menu Item Popularity Tracking
+
+```sql
+-- =====================================================
+-- TRACKING POPOLARITÀ ITEMS (PER SORTING)
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION update_item_order_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Solo quando ordine passa a confirmed
+  IF NEW.status = 'confirmed' AND OLD.status = 'pending' THEN
+    UPDATE menu_items mi
+    SET order_count = order_count + oi.quantity
+    FROM order_items oi
+    WHERE oi.order_id = NEW.id
+      AND mi.id = oi.menu_item_id;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_item_order_count
+AFTER UPDATE OF status ON orders
+FOR EACH ROW
+WHEN (NEW.status = 'confirmed' AND OLD.status = 'pending')
+EXECUTE FUNCTION update_item_order_count();
+```
+
+### B.5.7 Outbox Entry Creation (Transactional)
+
+```sql
+-- =====================================================
+-- CREAZIONE ENTRY OUTBOX PER MESSAGGI
+-- =====================================================
+
+CREATE OR REPLACE FUNCTION create_outbox_entry(
+  p_tenant_id UUID,
+  p_restaurant_id UUID,
+  p_aggregate_type VARCHAR(50),
+  p_aggregate_id UUID,
+  p_event_type VARCHAR(100),
+  p_channel message_channel,
+  p_destination VARCHAR(255),
+  p_payload JSONB,
+  p_template_id VARCHAR(100) DEFAULT NULL
+)
+RETURNS UUID AS $$
+DECLARE
+  v_id UUID;
+  v_idempotency_key VARCHAR(255);
+BEGIN
+  -- Genera idempotency key
+  v_idempotency_key := p_aggregate_type || ':' || p_aggregate_id::TEXT || ':' || p_event_type;
+  
+  INSERT INTO outbox (
+    tenant_id,
+    restaurant_id,
+    aggregate_type,
+    aggregate_id,
+    event_type,
+    channel,
+    destination,
+    payload,
+    template_id,
+    idempotency_key,
+    next_retry_at
+  ) VALUES (
+    p_tenant_id,
+    p_restaurant_id,
+    p_aggregate_type,
+    p_aggregate_id,
+    p_event_type,
+    p_channel,
+    p_destination,
+    p_payload,
+    p_template_id,
+    v_idempotency_key,
+    NOW()
+  )
+  ON CONFLICT (tenant_id, idempotency_key) DO NOTHING
+  RETURNING id INTO v_id;
+  
+  RETURN v_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger automatico creazione outbox per nuovo ordine
+CREATE OR REPLACE FUNCTION create_order_notifications()
+RETURNS TRIGGER AS $$
+DECLARE
+  v_restaurant RECORD;
+  v_customer_phone VARCHAR(20);
+BEGIN
+  -- Ottieni info restaurant
+  SELECT r.*, t.id as tenant_id
+  INTO v_restaurant
+  FROM restaurants r
+  JOIN tenants t ON r.tenant_id = t.id
+  WHERE r.id = NEW.restaurant_id;
+  
+  -- Notifica al ristorante (WhatsApp)
+  IF v_restaurant.whatsapp_number IS NOT NULL THEN
+    PERFORM create_outbox_entry(
+      v_restaurant.tenant_id,
+      NEW.restaurant_id,
+      'order',
+      NEW.id,
+      'order_created_restaurant',
+      'whatsapp',
+      v_restaurant.whatsapp_number,
+      jsonb_build_object(
+        'order_number', NEW.order_number,
+        'customer_name', NEW.customer_name,
+        'total', NEW.total_amount,
+        'items_count', (SELECT COUNT(*) FROM order_items WHERE order_id = NEW.id)
+      ),
+      'new_order_restaurant'
+    );
+  END IF;
+  
+  -- Notifica Telegram se configurato
+  IF v_restaurant.telegram_chat_id IS NOT NULL THEN
+    PERFORM create_outbox_entry(
+      v_restaurant.tenant_id,
+      NEW.restaurant_id,
+      'order',
+      NEW.id,
+      'order_created_telegram',
+      'telegram',
+      v_restaurant.telegram_chat_id,
+      jsonb_build_object(
+        'order_number', NEW.order_number,
+        'customer_name', NEW.customer_name,
+        'total', NEW.total_amount,
+        'delivery_type', NEW.delivery_type
+      ),
+      NULL
+    );
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_create_order_notifications
+AFTER INSERT ON orders
+FOR EACH ROW
+EXECUTE FUNCTION create_order_notifications();
+```
+
+## B.6 RLS Policies (Multi-Tenancy) — OBBLIGATORIE
+
+**Regola:** tutte le tabelle tenant-scoped DEVONO avere RLS attiva e policies deterministiche.  
+**Meccanismo canonico di scoping:** `current_setting('app.tenant_id', true)` (UUID) e `current_setting('app.role', true)` per bypass superadmin.
+
+> STOP-THE-LINE: se `app.tenant_id` non è settata in sessione DB per richieste tenant-scoped → STOP (FAIL).
+
+```sql
+-- =============================================================
+-- RLS: CONTEXT + HELPERS
+-- =============================================================
+
+-- Helper: tenant corrente (UUID) letto dalla sessione DB
+CREATE OR REPLACE FUNCTION current_tenant_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT NULLIF(current_setting('app.tenant_id', true), '')::uuid
+$$;
+
+-- Helper: ruolo globale (es. 'superadmin')
+CREATE OR REPLACE FUNCTION current_global_role()
+RETURNS text
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT NULLIF(current_setting('app.role', true), '')
+$$;
+
+-- Helper: bypass per superadmin (default-deny se role non settato)
+CREATE OR REPLACE FUNCTION is_superadmin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT COALESCE(current_global_role() = 'superadmin', false)
+$$;
+
+-- =============================================================
+-- RLS: ENABLE
+-- =============================================================
+
+ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE menu_categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_item_variants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_extras ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE restaurant_credits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE credit_purchases ENABLE ROW LEVEL SECURITY;
+ALTER TABLE credit_ledger ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE message_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE outbox ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+
+-- Tabelle tecniche: si possono lasciare senza RLS se sono globali (system_settings, feature_flags),
+-- ma DEVONO essere protette a livello applicativo (role-gate). Se diventano tenant-scoped → aggiungere RLS.
+
+-- =============================================================
+-- RLS: POLICIES (DEFAULT-DENY + SUPERADMIN BYPASS)
+-- =============================================================
+
+-- TENANTS: accesso solo al tenant corrente, o superadmin
+DROP POLICY IF EXISTS tenants_isolation ON tenants;
+CREATE POLICY tenants_isolation ON tenants
+  USING (is_superadmin() OR id = current_tenant_id());
+
+-- RESTAURANTS: accesso solo a restaurants del tenant corrente, o superadmin
+DROP POLICY IF EXISTS restaurants_isolation ON restaurants;
+CREATE POLICY restaurants_isolation ON restaurants
+  USING (is_superadmin() OR tenant_id = current_tenant_id());
+
+-- MENU: tutte le tabelle menu sono scoperte via restaurant -> tenant
+DROP POLICY IF EXISTS menu_categories_isolation ON menu_categories;
+CREATE POLICY menu_categories_isolation ON menu_categories
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = menu_categories.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+DROP POLICY IF EXISTS menu_items_isolation ON menu_items;
+CREATE POLICY menu_items_isolation ON menu_items
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = menu_items.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+DROP POLICY IF EXISTS menu_item_variants_isolation ON menu_item_variants;
+CREATE POLICY menu_item_variants_isolation ON menu_item_variants
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM menu_items mi
+      JOIN restaurants r ON r.id = mi.restaurant_id
+      WHERE mi.id = menu_item_variants.menu_item_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+DROP POLICY IF EXISTS menu_extras_isolation ON menu_extras;
+CREATE POLICY menu_extras_isolation ON menu_extras
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = menu_extras.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+-- ORDERS: scoperte via restaurant -> tenant
+DROP POLICY IF EXISTS orders_isolation ON orders;
+CREATE POLICY orders_isolation ON orders
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = orders.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+DROP POLICY IF EXISTS order_items_isolation ON order_items;
+CREATE POLICY order_items_isolation ON order_items
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM orders o
+      JOIN restaurants r ON r.id = o.restaurant_id
+      WHERE o.id = order_items.order_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+-- CREDITI: scoperte via restaurant -> tenant
+DROP POLICY IF EXISTS restaurant_credits_isolation ON restaurant_credits;
+CREATE POLICY restaurant_credits_isolation ON restaurant_credits
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = restaurant_credits.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+DROP POLICY IF EXISTS credit_purchases_isolation ON credit_purchases;
+CREATE POLICY credit_purchases_isolation ON credit_purchases
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = credit_purchases.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+DROP POLICY IF EXISTS credit_ledger_isolation ON credit_ledger;
+CREATE POLICY credit_ledger_isolation ON credit_ledger
+  USING (
+    is_superadmin()
+    OR EXISTS (
+      SELECT 1
+      FROM restaurants r
+      WHERE r.id = credit_ledger.restaurant_id
+        AND r.tenant_id = current_tenant_id()
+    )
+  );
+
+-- SUBSCRIPTIONS: tenant-scoped diretto
+DROP POLICY IF EXISTS subscriptions_isolation ON subscriptions;
+CREATE POLICY subscriptions_isolation ON subscriptions
+  USING (is_superadmin() OR tenant_id = current_tenant_id());
+
+-- WEBHOOK EVENTS: tenant-scoped diretto
+DROP POLICY IF EXISTS webhook_events_isolation ON webhook_events;
+CREATE POLICY webhook_events_isolation ON webhook_events
+  USING (is_superadmin() OR tenant_id = current_tenant_id());
+
+-- MESSAGE/OUTBOX/NOTIFICATIONS: tenant-scoped diretto
+DROP POLICY IF EXISTS message_log_isolation ON message_log;
+CREATE POLICY message_log_isolation ON message_log
+  USING (is_superadmin() OR tenant_id = current_tenant_id());
+
+DROP POLICY IF EXISTS outbox_isolation ON outbox;
+CREATE POLICY outbox_isolation ON outbox
+  USING (is_superadmin() OR tenant_id = current_tenant_id());
+
+DROP POLICY IF EXISTS notifications_isolation ON notifications;
+CREATE POLICY notifications_isolation ON notifications
+  USING (is_superadmin() OR tenant_id = current_tenant_id());
+
+-- =============================================================
+-- RLS: NOTE OPERATIVE (ARCHITETTURA, NON IMPLEMENTAZIONE)
+-- =============================================================
+-- L’applicazione backend (Railway) DEVE settare:
+--   SET LOCAL app.tenant_id = '<uuid>';
+--   SET LOCAL app.role = '<role>';
+-- per ogni request, nella stessa transaction/connection.
+-- Se non è possibile garantire questo vincolo, RLS non è affidabile → STOP.
+```
+
