@@ -1503,9 +1503,16 @@ function LoginScreen({ onLoggedIn }) {
 export default function App() {
   const [authState, setAuthState] = useState({ loading: true, ok: false });
 
-  const check = useCallback(async () => {
-    setAuthState({ loading: true, ok: false });
-    try {
+const check = useCallback(async () => {
+  // ============================================
+  // DEV BYPASS - rimuovere prima del pilot
+  // ============================================
+  setAuthState({ loading: false, ok: true });
+  return;
+  // ============================================
+  
+  setAuthState({ loading: true, ok: false });
+  try {
       const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, { credentials: 'include' });
       setAuthState({ loading: false, ok: res.ok });
     } catch {
